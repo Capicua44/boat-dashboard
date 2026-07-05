@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<title></title>
+	<meta name="generator" content="LibreOffice 25.2.7.2 (Windows)"/>
+	<meta name="created" content="2026-07-05T16:10:42.257332300"/>
+	<meta name="changed" content="2026-07-05T16:11:36.632693400"/>
+	<style type="text/css">
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		p { line-height: 115%; margin-bottom: 0.25cm; background: transparent }
+	</style>
+</head>
+<body lang="pt-BR" link="#000080" vlink="#800000" dir="ltr"><p style="line-height: 100%; margin-bottom: 0cm">
+&lt;!DOCTYPE html&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;html lang=&quot;es&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;head&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;meta
+charset=&quot;UTF-8&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;meta
+name=&quot;viewport&quot; content=&quot;width=device-width,
+initial-scale=1, maximum-scale=1&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;title&gt;Boat
+App&lt;/title&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;script
+src=&quot;https://unpkg.com/mqtt/dist/mqtt.min.js&quot;&gt;&lt;/script&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;style&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">body {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  margin: 0;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  font-family:
+Arial, sans-serif;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  background:
+#0b1220;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  color: white;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">}</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">/* HEADER */</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.header {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  background:
+#0f1b33;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  padding: 15px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  text-align:
+center;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  font-size: 20px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  font-weight: bold;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  color: #00d4ff;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">}</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">/* GRID APP */</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.grid {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  display: grid;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"> 
+grid-template-columns: 1fr 1fr;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  gap: 12px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  padding: 12px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">}</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">/* CARD STYLE */</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.card {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  background:
+#142642;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  border-radius:
+15px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  padding: 15px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  text-align:
+center;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  box-shadow: 0 4px
+10px rgba(0,0,0,0.3);</p>
+<p style="line-height: 100%; margin-bottom: 0cm">}</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.title {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  font-size: 14px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  color: #aaa;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">}</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.value {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  font-size: 26px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  font-weight: bold;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  color: #00ff99;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  margin-top: 5px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">}</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">/* STATUS BAR */</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.status {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  margin: 10px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  padding: 12px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  text-align:
+center;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  border-radius:
+12px;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  font-weight: bold;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  background:
+#1a2d4d;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">}</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.online { color:
+#00ff99; }</p>
+<p style="line-height: 100%; margin-bottom: 0cm">.offline { color:
+#ff4d4d; }</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;/style&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;/head&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;body&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;div
+class=&quot;header&quot;&gt;⛵ BOAT CONTROL APP&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;div id=&quot;status&quot;
+class=&quot;status offline&quot;&gt;OFFLINE&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;div
+class=&quot;grid&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;div
+class=&quot;card&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+class=&quot;title&quot;&gt;Wind Speed&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div id=&quot;ws&quot;
+class=&quot;value&quot;&gt;--&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;div
+class=&quot;card&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+class=&quot;title&quot;&gt;Wind Dir&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div id=&quot;wd&quot;
+class=&quot;value&quot;&gt;--&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;div
+class=&quot;card&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+class=&quot;title&quot;&gt;Depth&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+id=&quot;depth&quot; class=&quot;value&quot;&gt;--&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;div
+class=&quot;card&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+class=&quot;title&quot;&gt;RSSI&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+id=&quot;rssi&quot; class=&quot;value&quot;&gt;--&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;div
+class=&quot;card&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+class=&quot;title&quot;&gt;Battery Motor&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+id=&quot;bat_m&quot; class=&quot;value&quot;&gt;--&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;div
+class=&quot;card&quot;&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+class=&quot;title&quot;&gt;Battery Service&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    &lt;div
+id=&quot;bat_s&quot; class=&quot;value&quot;&gt;--&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  &lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;/div&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;script&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">//========================</p>
+<p style="line-height: 100%; margin-bottom: 0cm">// MQTT CONNECT</p>
+<p style="line-height: 100%; margin-bottom: 0cm">//========================</p>
+<p style="line-height: 100%; margin-bottom: 0cm">const client =
+mqtt.connect(&quot;wss://broker.hivemq.com:8884/mqtt&quot;);</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">client.on(&quot;connect&quot;,
+() =&gt; {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  console.log(&quot;MQTT
+conectado&quot;);</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm"> 
+client.subscribe(&quot;boat/data&quot;);</p>
+<p style="line-height: 100%; margin-bottom: 0cm"> 
+client.subscribe(&quot;boat/status&quot;);</p>
+<p style="line-height: 100%; margin-bottom: 0cm">});</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">//========================</p>
+<p style="line-height: 100%; margin-bottom: 0cm">// DATA HANDLER</p>
+<p style="line-height: 100%; margin-bottom: 0cm">//========================</p>
+<p style="line-height: 100%; margin-bottom: 0cm">client.on(&quot;message&quot;,
+(topic, message) =&gt; {</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  const msg =
+message.toString();</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  // STATUS</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  if(topic ===
+&quot;boat/status&quot;) {</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    const el =
+document.getElementById(&quot;status&quot;);</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    if(msg ===
+&quot;ONLINE&quot;) {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">      el.innerHTML =
+&quot;ONLINE&quot;;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">      el.className =
+&quot;status online&quot;;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    } else {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">      el.innerHTML =
+&quot;OFFLINE&quot;;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">      el.className =
+&quot;status offline&quot;;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    }</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    return;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  }</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  // DATA JSON</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  try {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">    const d =
+JSON.parse(msg);</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">   
+document.getElementById(&quot;ws&quot;).innerHTML = d.ws.toFixed(1);</p>
+<p style="line-height: 100%; margin-bottom: 0cm">   
+document.getElementById(&quot;wd&quot;).innerHTML = d.wd.toFixed(1);</p>
+<p style="line-height: 100%; margin-bottom: 0cm">   
+document.getElementById(&quot;depth&quot;).innerHTML =
+d.depth.toFixed(1);</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">   
+document.getElementById(&quot;bat_m&quot;).innerHTML =
+d.bat_m.toFixed(2);</p>
+<p style="line-height: 100%; margin-bottom: 0cm">   
+document.getElementById(&quot;bat_s&quot;).innerHTML =
+d.bat_s.toFixed(2);</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">   
+document.getElementById(&quot;rssi&quot;).innerHTML = d.rssi;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  } catch(e) {</p>
+<p style="line-height: 100%; margin-bottom: 0cm">   
+console.log(&quot;JSON error&quot;, e);</p>
+<p style="line-height: 100%; margin-bottom: 0cm">  }</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">});</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;/script&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;/body&gt;</p>
+<p style="line-height: 100%; margin-bottom: 0cm">&lt;/html&gt;</p>
+</body>
+</html>
