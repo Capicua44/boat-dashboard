@@ -1,135 +1,222 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Boat Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<title>Boat Dashboard</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #0b1a2b;
-      color: white;
-      text-align: center;
-    }
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1220">
 
-    .box {
-      display: inline-block;
-      padding: 20px;
-      margin: 10px;
-      background: #12263a;
-      border-radius: 10px;
-      width: 200px;
-    }
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-    h1 {
-      color: #00d4ff;
-    }
+<style>
 
-    .value {
-      font-size: 28px;
-      font-weight: bold;
-      color: #00ff99;
-    }
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b1220;
+  color: white;
+}
 
-    .alarm {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
+/* HEADER */
+.header {
+  background: #0f1b33;
+  padding: 14px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #00d4ff;
+}
+
+/* STATUS */
+.status {
+  margin: 10px;
+  padding: 10px;
+  text-align: center;
+  border-radius: 10px;
+  font-weight: bold;
+  background: #1a2d4d;
+}
+
+.online { color: #00ff99; }
+.offline { color: #ff4d4d; }
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
+}
+
+/* CARD */
+.card {
+  background: #142642;
+  padding: 14px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.title {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.value {
+  font-size: 22px;
+  color: #00ff99;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+/* COMPASS */
+.compass {
+  width: 120px;
+  height: 120px;
+  margin: 10px auto;
+  border-radius: 50%;
+  border: 3px solid #00d4ff;
+  background: #0f1b33;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#arrow {
+  font-size: 40px;
+  transition: transform 0.4s ease;
+}
+
+</style>
 </head>
 
 <body>
 
-<h1>⛵ Boat Live Dashboard</h1>
+<div class="header">⛵ BOAT CONTROL DASHBOARD</div>
 
-<div class="box">
-  <h3>Wind Speed</h3>
-  <div id="ws" class="value">--</div>
+<div id="status" class="status offline">OFFLINE</div>
+
+<!-- COMPASS -->
+<div class="card">
+  <div class="title">Dirección del Viento</div>
+
+  <div class="compass">
+    <div id="arrow">⬆️</div>
+  </div>
+
+  <div class="value" id="apparentWind">--</div>
+  <div class="title">Viento Aparente</div>
 </div>
 
-<div class="box">
-  <h3>Wind Direction</h3>
-  <div id="wd" class="value">--</div>
-</div>
+<!-- GRID DATA -->
+<div class="grid">
 
-<div class="box">
-  <h3>Depth</h3>
-  <div id="depth" class="value">--</div>
-</div>
+  <div class="card">
+    <div class="title">Wind Speed</div>
+    <div id="ws" class="value">--</div>
+  </div>
 
-<div class="box">
-  <h3>Battery Motor</h3>
-  <div id="bat_m" class="value">--</div>
-</div>
+  <div class="card">
+    <div class="title">Wind Dir</div>
+    <div id="wd" class="value">--</div>
+  </div>
 
-<div class="box">
-  <h3>Battery Service</h3>
-  <div id="bat_s" class="value">--</div>
-</div>
+  <div class="card">
+    <div class="title">Depth</div>
+    <div id="depth" class="value">--</div>
+  </div>
 
-<div class="box">
-  <h3>Battery Bow</h3>
-  <div id="bat_b" class="value">--</div>
-</div>
+  <div class="card">
+    <div class="title">RSSI</div>
+    <div id="rssi" class="value">--</div>
+  </div>
 
-<div class="box">
-  <h3>RSSI</h3>
-  <div id="rssi" class="value">--</div>
-</div>
+  <div class="card">
+    <div class="title">Battery Motor</div>
+    <div id="bat_m" class="value">--</div>
+  </div>
 
-<div class="box">
-  <h3>Status</h3>
-  <div id="status" class="value">OFFLINE</div>
+  <div class="card">
+    <div class="title">Battery Service</div>
+    <div id="bat_s" class="value">--</div>
+  </div>
+
 </div>
 
 <script>
 
-//============================
+//==============================
 // MQTT CONNECT
-//============================
+//==============================
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
-client.on("connect", function () {
+client.on("connect", () => {
   console.log("MQTT conectado");
 
   client.subscribe("boat/data");
   client.subscribe("boat/status");
 });
 
-//============================
+//==============================
 // RECEIVE DATA
-//============================
-client.on("message", function (topic, message) {
+//==============================
+client.on("message", (topic, msg) => {
 
-  const msg = message.toString();
+  const text = msg.toString();
 
   // STATUS
   if(topic === "boat/status") {
-    document.getElementById("status").innerHTML = msg;
+
+    const el = document.getElementById("status");
+
+    if(text === "ONLINE") {
+      el.innerHTML = "ONLINE";
+      el.className = "status online";
+    } else {
+      el.innerHTML = "OFFLINE";
+      el.className = "status offline";
+    }
+
     return;
   }
 
-  // DATA
+  // DATA JSON
   try {
-    const data = JSON.parse(msg);
+    const data = JSON.parse(text);
 
+    // wind
     document.getElementById("ws").innerHTML = data.ws.toFixed(1);
     document.getElementById("wd").innerHTML = data.wd.toFixed(1);
     document.getElementById("depth").innerHTML = data.depth.toFixed(1);
+    document.getElementById("rssi").innerHTML = data.rssi;
 
+    // batteries
     document.getElementById("bat_m").innerHTML = data.bat_m.toFixed(2);
     document.getElementById("bat_s").innerHTML = data.bat_s.toFixed(2);
-    document.getElementById("bat_b").innerHTML = data.bat_b.toFixed(2);
 
-    document.getElementById("rssi").innerHTML = data.rssi;
+    // COMPASS ROTATION
+    document.getElementById("arrow").style.transform =
+      "rotate(" + data.wd + "deg)";
+
+    // apparent wind
+    document.getElementById("apparentWind").innerHTML =
+      data.ws.toFixed(1) + " kt";
 
   } catch(e) {
     console.log("JSON error", e);
   }
 
 });
+
+//==============================
+// PWA SERVICE WORKER
+//==============================
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
 
 </script>
 
