@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Boat Dashboard</title>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0b1a2b;
+      color: white;
+      text-align: center;
+    }
+
+    .box {
+      display: inline-block;
+      padding: 20px;
+      margin: 10px;
+      background: #12263a;
+      border-radius: 10px;
+      width: 200px;
+    }
+
+    h1 {
+      color: #00d4ff;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #00ff99;
+    }
+
+    .alarm {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>⛵ Boat Live Dashboard</h1>
+
+<div class="box">
+  <h3>Wind Speed</h3>
+  <div id="ws" class="value">--</div>
+</div>
+
+<div class="box">
+  <h3>Wind Direction</h3>
+  <div id="wd" class="value">--</div>
+</div>
+
+<div class="box">
+  <h3>Depth</h3>
+  <div id="depth" class="value">--</div>
+</div>
+
+<div class="box">
+  <h3>Battery Motor</h3>
+  <div id="bat_m" class="value">--</div>
+</div>
+
+<div class="box">
+  <h3>Battery Service</h3>
+  <div id="bat_s" class="value">--</div>
+</div>
+
+<div class="box">
+  <h3>Battery Bow</h3>
+  <div id="bat_b" class="value">--</div>
+</div>
+
+<div class="box">
+  <h3>RSSI</h3>
+  <div id="rssi" class="value">--</div>
+</div>
+
+<div class="box">
+  <h3>Status</h3>
+  <div id="status" class="value">OFFLINE</div>
+</div>
+
+<script>
+
+//============================
+// MQTT CONNECT
+//============================
+const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+
+client.on("connect", function () {
+  console.log("MQTT conectado");
+
+  client.subscribe("boat/data");
+  client.subscribe("boat/status");
+});
+
+//============================
+// RECEIVE DATA
+//============================
+client.on("message", function (topic, message) {
+
+  const msg = message.toString();
+
+  // STATUS
+  if(topic === "boat/status") {
+    document.getElementById("status").innerHTML = msg;
+    return;
+  }
+
+  // DATA
+  try {
+    const data = JSON.parse(msg);
+
+    document.getElementById("ws").innerHTML = data.ws.toFixed(1);
+    document.getElementById("wd").innerHTML = data.wd.toFixed(1);
+    document.getElementById("depth").innerHTML = data.depth.toFixed(1);
+
+    document.getElementById("bat_m").innerHTML = data.bat_m.toFixed(2);
+    document.getElementById("bat_s").innerHTML = data.bat_s.toFixed(2);
+    document.getElementById("bat_b").innerHTML = data.bat_b.toFixed(2);
+
+    document.getElementById("rssi").innerHTML = data.rssi;
+
+  } catch(e) {
+    console.log("JSON error", e);
+  }
+
+});
+
+</script>
+
+</body>
+</html>
