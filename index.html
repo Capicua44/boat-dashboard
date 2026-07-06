@@ -72,10 +72,12 @@ body {
   margin-top: 5px;
 }
 
-/* COMPASS */
+/* ========================= */
+/* BÚSSOLA (30% MENOR)       */
+/* ========================= */
 .compass {
-  width: 180px;
-  height: 180px;
+  width: 120px;
+  height: 120px;
   margin: 10px auto;
   border-radius: 50%;
   border: 3px solid #00d4ff;
@@ -83,11 +85,10 @@ body {
   position: relative;
 }
 
-/* ponteiro fino */
 #needle {
   position: absolute;
   width: 2px;
-  height: 80px;
+  height: 55px;
   background: red;
   top: 50%;
   left: 50%;
@@ -95,11 +96,10 @@ body {
   transform: rotate(0deg) translateX(-50%);
 }
 
-/* centro */
 #centerDot {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   background: white;
   border-radius: 50%;
   top: 50%;
@@ -107,10 +107,18 @@ body {
   transform: translate(-50%,-50%);
 }
 
+/* VENTO ABAIXO DO INSTRUMENTO */
+.windBox {
+  text-align: center;
+  margin-top: 6px;
+  font-size: 14px;
+  color: #00d4ff;
+}
+
 /* ALARME */
 .alarm {
   margin: 10px;
-  padding: 10px;
+  padding: 12px;
   text-align: center;
   border-radius: 10px;
   background: #1a2d4d;
@@ -131,7 +139,9 @@ body {
 
 <div id="status" class="status offline">OFFLINE</div>
 
-<!-- COMPASS -->
+<!-- ===================== -->
+<!-- BÚSSOLA -->
+<!-- ===================== -->
 <div class="card">
   <div class="title">Bússola (Proa = 0°)</div>
 
@@ -141,6 +151,10 @@ body {
   </div>
 
   <div class="value" id="heading">--</div>
+
+  <div class="windBox">
+    Vento: <span id="wsTop">--</span> kt
+  </div>
 </div>
 
 <!-- ALARME -->
@@ -170,13 +184,13 @@ body {
   </div>
 
   <div class="card">
-    <div class="title">Profundidade</div>
-    <div id="depth" class="value">--</div>
+    <div class="title">Temperatura da Água</div>
+    <div id="temp" class="value">--</div>
   </div>
 
   <div class="card">
-    <div class="title">RSSI</div>
-    <div id="rssi" class="value">--</div>
+    <div class="title">Profundidade</div>
+    <div id="depth" class="value">--</div>
   </div>
 
   <div class="card">
@@ -187,6 +201,11 @@ body {
   <div class="card">
     <div class="title">Bateria Serviço</div>
     <div id="bat_s" class="value">--</div>
+  </div>
+
+  <div class="card">
+    <div class="title">Bateria Motor de Proa</div>
+    <div id="bat_bow" class="value">--</div>
   </div>
 
 </div>
@@ -214,15 +233,15 @@ function updateCompass(h) {
 }
 
 //==============================
-// ALARME
+// ALARME BATERIAS
 //==============================
-function checkBattery(motor, service) {
+function checkBattery(m, s, bow) {
 
   const alarm = document.getElementById("alarm");
 
-  if(motor < 11.8 || service < 11.8) {
+  if(m < 11.8 || s < 11.8 || bow < 11.8) {
     alarm.className = "alarm danger";
-    alarm.innerHTML = "⚠ BAIXA TENSÃO DETECTADA";
+    alarm.innerHTML = "⚠ BAIXA TENSÃO DETECTADA!";
   } else {
     alarm.className = "alarm";
     alarm.innerHTML = "Sistema OK";
@@ -234,13 +253,12 @@ function checkBattery(motor, service) {
 //==============================
 client.on("message", (topic, msg) => {
 
-  const text = msg.toString();
+  const data = JSON.parse(msg.toString());
 
-  // STATUS
   if(topic === "boat/status") {
     const el = document.getElementById("status");
 
-    if(text === "ONLINE") {
+    if(data === "ONLINE" || msg.toString() === "ONLINE") {
       el.innerHTML = "ONLINE";
       el.className = "status online";
     } else {
@@ -250,38 +268,35 @@ client.on("message", (topic, msg) => {
     return;
   }
 
-  // DATA
-  try {
+  // GPS
+  document.getElementById("lat").innerHTML = data.lat?.toFixed(6) ?? "--";
+  document.getElementById("lon").innerHTML = data.lon?.toFixed(6) ?? "--";
 
-    const data = JSON.parse(text);
+  // vento
+  document.getElementById("ws").innerHTML = data.ws?.toFixed(1) ?? "--";
+  document.getElementById("wsTop").innerHTML = data.ws?.toFixed(1) ?? "--";
+  document.getElementById("wd").innerHTML = data.wd?.toFixed(0) ?? "--";
 
-    document.getElementById("ws").innerHTML = data.ws?.toFixed(1) ?? "--";
-    document.getElementById("wd").innerHTML = data.wd?.toFixed(0) ?? "--";
-    document.getElementById("depth").innerHTML = data.depth?.toFixed(1) ?? "--";
-    document.getElementById("rssi").innerHTML = data.rssi ?? "--";
+  // água
+  document.getElementById("temp").innerHTML = data.temp?.toFixed(1) ?? "--";
 
-    document.getElementById("bat_m").innerHTML = data.bat_m?.toFixed(2) ?? "--";
-    document.getElementById("bat_s").innerHTML = data.bat_s?.toFixed(2) ?? "--";
+  // profundidade
+  document.getElementById("depth").innerHTML = data.depth?.toFixed(1) ?? "--";
 
-    document.getElementById("lat").innerHTML = data.lat?.toFixed(6) ?? "--";
-    document.getElementById("lon").innerHTML = data.lon?.toFixed(6) ?? "--";
+  // baterias
+  document.getElementById("bat_m").innerHTML = data.bat_m?.toFixed(2) ?? "--";
+  document.getElementById("bat_s").innerHTML = data.bat_s?.toFixed(2) ?? "--";
+  document.getElementById("bat_bow").innerHTML = data.bat_bow?.toFixed(2) ?? "--";
 
-    updateCompass(data.heading ?? data.wd ?? 0);
+  updateCompass(data.heading ?? data.wd ?? 0);
 
-    checkBattery(data.bat_m ?? 0, data.bat_s ?? 0);
-
-  } catch(e) {
-    console.log("Erro JSON", e);
-  }
+  checkBattery(
+    data.bat_m ?? 0,
+    data.bat_s ?? 0,
+    data.bat_bow ?? 0
+  );
 
 });
-
-//==============================
-// PWA
-//==============================
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
 
 </script>
 
