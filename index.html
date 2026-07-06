@@ -49,7 +49,7 @@ body {
 .value { font-size: 22px; color: #00ff99; font-weight: bold; }
 
 /* =========================
-   BRÚJULA (15% MÁS PEQUEÑA)
+   BRÚJULA
 ========================= */
 .compass {
   width: 136px;
@@ -84,7 +84,7 @@ body {
   transform: translate(-50%,-50%);
 }
 
-/* ticks bien alineados */
+/* ticks */
 .tick {
   position: absolute;
   width: 2px;
@@ -157,7 +157,7 @@ body {
 
 <div id="alarm" class="alarm">Sistema OK</div>
 
-<!-- GPS LADO A LADO -->
+<!-- GPS -->
 <div class="card">
   <div class="title">GPS</div>
   <div style="display:flex; justify-content:space-between; font-size:14px; color:#00ff99;">
@@ -185,7 +185,7 @@ client.on("connect", () => {
 });
 
 /* =========================
-   TICKS PERFECTAMENTE CIRCULARES
+   TICKS CIRCULARES PERFECTOS
 ========================= */
 const compass = document.querySelector(".compass");
 
@@ -223,10 +223,6 @@ function safeInt(v) {
   return Math.round(n);
 }
 
-function normalize(h) {
-  return ((h + 360) % 360);
-}
-
 /* MQTT */
 client.on("message", (topic, msg) => {
 
@@ -245,7 +241,11 @@ client.on("message", (topic, msg) => {
   document.getElementById("bat_s").innerHTML = safeNumber(d.bat_s);
   document.getElementById("bat_b").innerHTML = safeNumber(d.bat_b);
 
-  let h = Number(d.heading ?? d.cog ?? d.wd ?? 0);
+  /* ⚡ FIX BRÚJULA (CORRECCIÓN REAL) */
+  let raw = Number(d.heading ?? d.cog ?? d.wd ?? 0);
+
+  // normaliza y corrige offset visual
+  let h = (raw + 360) % 360;
 
   document.getElementById("heading").innerHTML = Math.round(h) + "°";
 
