@@ -126,33 +126,14 @@ body {
 <div id="alarm" class="alarm">Sistema OK</div>
 
 <!-- DADOS -->
-<div class="card">
-  Latitude: <div class="value" id="lat">--</div>
-</div>
+<div class="card">Latitude: <div class="value" id="lat">--</div></div>
+<div class="card">Longitude: <div class="value" id="lon">--</div></div>
+<div class="card">Temperatura: <div class="value" id="temp">--</div></div>
+<div class="card">Profundidade: <div class="value" id="depth">--</div></div>
 
-<div class="card">
-  Longitude: <div class="value" id="lon">--</div>
-</div>
-
-<div class="card">
-  Temperatura: <div class="value" id="temp">--</div>
-</div>
-
-<div class="card">
-  Profundidade: <div class="value" id="depth">--</div>
-</div>
-
-<div class="card">
-  Bateria Motor: <div class="value" id="bat_m">--</div>
-</div>
-
-<div class="card">
-  Bateria Serviço: <div class="value" id="bat_s">--</div>
-</div>
-
-<div class="card">
-  Bateria Proa: <div class="value" id="bat_bow">--</div>
-</div>
+<div class="card">Bateria Motor: <div class="value" id="bat_m">--</div></div>
+<div class="card">Bateria Serviço: <div class="value" id="bat_s">--</div></div>
+<div class="card">Bateria Proa: <div class="value" id="bat_bow">--</div></div>
 
 <script>
 
@@ -166,16 +147,22 @@ client.on("connect", () => {
   client.subscribe("boat/status");
 });
 
+/* ---------------- SAFE FORMAT ---------------- */
 function fmt(v, d=1) {
-  if (v === undefined || v === null || isNaN(v)) return "--";
-  return Number(v).toFixed(d);
+  if (v === undefined || v === null || v === "") return "--";
+
+  let n = Number(v);
+  if (isNaN(n)) return "--";
+
+  return n.toFixed(d);
 }
 
-// bússola relativa -180 a +180
+/* ---------------- COMPASS NORMALIZATION ---------------- */
 function normalize(h) {
   return ((h + 180) % 360) - 180;
 }
 
+/* ---------------- BATTERY ALARM ---------------- */
 function checkBattery(m, s, b) {
   const alarm = document.getElementById("alarm");
 
@@ -188,6 +175,7 @@ function checkBattery(m, s, b) {
   }
 }
 
+/* ---------------- MQTT ---------------- */
 client.on("message", (topic, msg) => {
 
   if(topic === "boat/status") return;
@@ -199,28 +187,30 @@ client.on("message", (topic, msg) => {
     return;
   }
 
-  // GPS
+  /* GPS */
   document.getElementById("lat").innerHTML = fmt(d.lat, 6);
   document.getElementById("lon").innerHTML = fmt(d.lon, 6);
 
-  // vento / profundidade
+  /* sensors */
   document.getElementById("wsTop").innerHTML = fmt(d.ws, 1);
   document.getElementById("temp").innerHTML = fmt(d.temp, 1);
   document.getElementById("depth").innerHTML = fmt(d.depth, 1);
 
-  // baterias
+  /* batteries */
   document.getElementById("bat_m").innerHTML = fmt(d.bat_m, 2);
   document.getElementById("bat_s").innerHTML = fmt(d.bat_s, 2);
   document.getElementById("bat_bow").innerHTML = fmt(d.bat_bow, 2);
 
-  // bússola (proa = 0° topo)
-  let h = normalize(d.wd || 0);
+  /* COMPASS FIX (REAL LOGIC) */
+  let headingRaw = d.heading ?? d.cog ?? d.wd ?? 0;
+  let h = normalize(Number(headingRaw));
 
   document.getElementById("heading").innerHTML = h.toFixed(0) + "°";
 
   document.getElementById("needle").style.transform =
     "rotate(" + h + "deg) translateX(-50%)";
 
+  /* alarm */
   checkBattery(d.bat_m, d.bat_s, d.bat_bow);
 });
 
