@@ -133,7 +133,7 @@ body {
 
 <div class="card">Bateria Motor: <div class="value" id="bat_m">--</div></div>
 <div class="card">Bateria Serviço: <div class="value" id="bat_s">--</div></div>
-<div class="card">Bateria Proa: <div class="value" id="bat_bow">--</div></div>
+<div class="card">Bateria Proa: <div class="value" id="bat_b">--</div></div>
 
 <script>
 
@@ -199,7 +199,7 @@ client.on("message", (topic, msg) => {
   /* batteries */
   document.getElementById("bat_m").innerHTML = fmt(d.bat_m, 2);
   document.getElementById("bat_s").innerHTML = fmt(d.bat_s, 2);
-  document.getElementById("bat_bow").innerHTML = fmt(d.bat_bow, 2);
+  document.getElementById("bat_b").innerHTML = fmt(d.bat_b, 2);
 
   /* COMPASS FIX (REAL LOGIC) */
   let headingRaw = d.heading ?? d.cog ?? d.wd ?? 0;
@@ -211,7 +211,7 @@ client.on("message", (topic, msg) => {
     "rotate(" + h + "deg) translateX(-50%)";
 
   /* alarm */
-  checkBattery(d.bat_m, d.bat_s, d.bat_bow);
+  checkBattery(d.bat_m, d.bat_s, d.bat_b);
 });
 
 </script>
