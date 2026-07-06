@@ -48,7 +48,6 @@ body {
 .title { font-size: 12px; color: #aaa; }
 .value { font-size: 22px; color: #00ff99; font-weight: bold; }
 
-/* COMPASS */
 .compass {
   width: 160px;
   height: 160px;
@@ -107,7 +106,6 @@ body {
 
 <div id="status" class="status offline">OFFLINE</div>
 
-<!-- BÚSSOLA -->
 <div class="card">
   <div class="title">Bússola</div>
 
@@ -125,7 +123,6 @@ body {
 
 <div id="alarm" class="alarm">Sistema OK</div>
 
-<!-- DADOS -->
 <div class="card">Latitude: <div class="value" id="lat">--</div></div>
 <div class="card">Longitude: <div class="value" id="lon">--</div></div>
 <div class="card">Temperatura: <div class="value" id="temp">--</div></div>
@@ -147,26 +144,29 @@ client.on("connect", () => {
   client.subscribe("boat/status");
 });
 
-/* ---------------- SAFE FORMAT ---------------- */
-function fmt(v, d=1) {
+/* ---------------- SAFE NUMBER PARSER ---------------- */
+function safeNumber(v, decimals = 2) {
   if (v === undefined || v === null || v === "") return "--";
 
-  let n = Number(v);
+  let n = Number(String(v).replace(",", "."));
   if (isNaN(n)) return "--";
 
-  return n.toFixed(d);
+  return n.toFixed(decimals);
 }
 
-/* ---------------- COMPASS NORMALIZATION ---------------- */
-function normalize(h) {
-  return ((h + 180) % 360) - 180;
+/* ---------------- SAFE INT ---------------- */
+function safeInt(v) {
+  if (v === undefined || v === null || v === "") return "--";
+  let n = Number(v);
+  if (isNaN(n)) return "--";
+  return Math.round(n);
 }
 
-/* ---------------- BATTERY ALARM ---------------- */
+/* ---------------- BATTERY CHECK ---------------- */
 function checkBattery(m, s, b) {
   const alarm = document.getElementById("alarm");
 
-  if(m < 11.8 || s < 11.8 || b < 11.8) {
+  if (m < 11.8 || s < 11.8 || b < 11.8) {
     alarm.className = "alarm danger";
     alarm.innerHTML = "⚠ BAIXA TENSÃO!";
   } else {
@@ -175,43 +175,53 @@ function checkBattery(m, s, b) {
   }
 }
 
-/* ---------------- MQTT ---------------- */
+/* ---------------- NORMALIZE HEADING ---------------- */
+function normalize(h) {
+  return ((h + 360) % 360);
+}
+
 client.on("message", (topic, msg) => {
 
-  if(topic === "boat/status") return;
+  if (topic === "boat/status") return;
 
   let d;
   try {
     d = JSON.parse(msg.toString());
-  } catch(e) {
+  } catch (e) {
     return;
   }
 
+  console.log("MQTT:", d); // DEBUG
+
   /* GPS */
-  document.getElementById("lat").innerHTML = fmt(d.lat, 6);
-  document.getElementById("lon").innerHTML = fmt(d.lon, 6);
+  document.getElementById("lat").innerHTML = d.lat ?? "--";
+  document.getElementById("lon").innerHTML = d.lon ?? "--";
 
   /* sensors */
-  document.getElementById("wsTop").innerHTML = fmt(d.ws, 1);
-  document.getElementById("temp").innerHTML = fmt(d.temp, 1);
-  document.getElementById("depth").innerHTML = fmt(d.depth, 1);
+  document.getElementById("wsTop").innerHTML = safeNumber(d.ws, 1);
+  document.getElementById("temp").innerHTML = safeNumber(d.temp, 1);
+  document.getElementById("depth").innerHTML = safeNumber(d.depth, 1);
 
   /* batteries */
-  document.getElementById("bat_m").innerHTML = fmt(d.bat_m, 2);
-  document.getElementById("bat_s").innerHTML = fmt(d.bat_s, 2);
-  document.getElementById("bat_b").innerHTML = fmt(d.bat_b, 2);
+  let bat_m = safeNumber(d.bat_m);
+  let bat_s = safeNumber(d.bat_s);
+  let bat_b = safeNumber(d.bat_b);
 
-  /* COMPASS FIX (REAL LOGIC) */
+  document.getElementById("bat_m").innerHTML = bat_m;
+  document.getElementById("bat_s").innerHTML = bat_s;
+  document.getElementById("bat_b").innerHTML = bat_b;
+
+  /* compass */
   let headingRaw = d.heading ?? d.cog ?? d.wd ?? 0;
   let h = normalize(Number(headingRaw));
 
-  document.getElementById("heading").innerHTML = h.toFixed(0) + "°";
+  document.getElementById("heading").innerHTML = safeInt(h) + "°";
 
   document.getElementById("needle").style.transform =
     "rotate(" + h + "deg) translateX(-50%)";
 
   /* alarm */
-  checkBattery(d.bat_m, d.bat_s, d.bat_b);
+  checkBattery(Number(d.bat_m), Number(d.bat_s), Number(d.bat_b));
 });
 
 </script>
