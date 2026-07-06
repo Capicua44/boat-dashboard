@@ -48,9 +48,12 @@ body {
 .title { font-size: 12px; color: #aaa; }
 .value { font-size: 22px; color: #00ff99; font-weight: bold; }
 
+/* =========================
+   BRÚJULA 15% MÁS PEQUEÑA
+========================= */
 .compass {
-  width: 160px;
-  height: 160px;
+  width: 136px;
+  height: 136px;
   margin: 10px auto;
   border-radius: 50%;
   border: 3px solid #00d4ff;
@@ -58,26 +61,52 @@ body {
   position: relative;
 }
 
+/* aguja */
 #needle {
   position: absolute;
   width: 2px;
-  height: 70px;
+  height: 55px;
   background: red;
   top: 50%;
   left: 50%;
   transform-origin: bottom center;
 }
 
+/* centro */
 #centerDot {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   background: white;
   border-radius: 50%;
   top: 50%;
   left: 50%;
   transform: translate(-50%,-50%);
 }
+
+/* ticks cada 10° */
+.tick {
+  position: absolute;
+  width: 2px;
+  height: 8px;
+  background: #00d4ff;
+  left: 50%;
+  top: 50%;
+  transform-origin: bottom center;
+}
+
+/* cardinales */
+.cardinal {
+  position: absolute;
+  font-size: 10px;
+  color: #00ff99;
+  font-weight: bold;
+}
+
+#north { top: 4px; left: 50%; transform: translateX(-50%); }   /* 0° */
+#south { bottom: 4px; left: 50%; transform: translateX(-50%); }/* 180° */
+#east  { right: 4px; top: 50%; transform: translateY(-50%); }   /* +90 */
+#west  { left: 4px; top: 50%; transform: translateY(-50%); }    /* -90 */
 
 .windBox {
   text-align: center;
@@ -111,6 +140,12 @@ body {
   <div class="title">Bússola</div>
 
   <div class="compass">
+
+    <div id="north" class="cardinal">0°</div>
+    <div id="south" class="cardinal">180°</div>
+    <div id="east" class="cardinal">+90</div>
+    <div id="west" class="cardinal">-90</div>
+
     <div id="needle"></div>
     <div id="centerDot"></div>
   </div>
@@ -124,16 +159,20 @@ body {
 
 <div id="alarm" class="alarm">Sistema OK</div>
 
-<!-- DATA PANELS (TEMPERATURA AL FINAL) -->
-<div class="card">Latitude: <div class="value" id="lat">--</div></div>
-<div class="card">Longitude: <div class="value" id="lon">--</div></div>
-<div class="card">Profundidade: <div class="value" id="depth">--</div></div>
+<!-- GPS -->
+<div class="card">
+  <div class="title">GPS</div>
+  <div class="value" style="font-size:14px; line-height:1.5">
+    Lat: <span id="lat">--</span><br>
+    Lon: <span id="lon">--</span>
+  </div>
+</div>
 
+<!-- DATA -->
+<div class="card">Profundidade: <div class="value" id="depth">--</div></div>
 <div class="card">Bateria Motor: <div class="value" id="bat_m">--</div></div>
 <div class="card">Bateria Serviço: <div class="value" id="bat_s">--</div></div>
 <div class="card">Bateria Proa: <div class="value" id="bat_b">--</div></div>
-
-<!-- 🔥 TEMPERATURA MOVIDA AL FINAL -->
 <div class="card">Temperatura: <div class="value" id="temp">--</div></div>
 
 <script>
@@ -145,10 +184,19 @@ client.on("connect", () => {
   document.getElementById("status").className = "status online";
 
   client.subscribe("boat/data");
-  client.subscribe("boat/status");
 });
 
-/* SAFE FORMAT */
+/* TICKS CADA 10° */
+const compass = document.querySelector(".compass");
+
+for (let i = 0; i < 360; i += 10) {
+  const tick = document.createElement("div");
+  tick.className = "tick";
+  tick.style.transform = `rotate(${i}deg) translateY(-58px)`;
+  compass.appendChild(tick);
+}
+
+/* SAFE */
 function safeNumber(v, d=2) {
   if (v === undefined || v === null || v === "") return "--";
   let n = Number(String(v).replace(",", "."));
@@ -167,30 +215,12 @@ function normalize(h) {
   return ((h + 360) % 360);
 }
 
-function checkBattery(m, s, b) {
-  const alarm = document.getElementById("alarm");
-
-  if (m < 11.8 || s < 11.8 || b < 11.8) {
-    alarm.className = "alarm danger";
-    alarm.innerHTML = "⚠ BAIXA TENSÃO!";
-  } else {
-    alarm.className = "alarm";
-    alarm.innerHTML = "Sistema OK";
-  }
-}
-
+/* MQTT */
 client.on("message", (topic, msg) => {
 
-  if (topic === "boat/status") return;
-
   let d;
-  try {
-    d = JSON.parse(msg.toString());
-  } catch (e) {
-    return;
-  }
-
-  console.log("MQTT:", d);
+  try { d = JSON.parse(msg.toString()); }
+  catch(e) { return; }
 
   document.getElementById("lat").innerHTML = d.lat ?? "--";
   document.getElementById("lon").innerHTML = d.lon ?? "--";
@@ -203,15 +233,12 @@ client.on("message", (topic, msg) => {
   document.getElementById("bat_s").innerHTML = safeNumber(d.bat_s);
   document.getElementById("bat_b").innerHTML = safeNumber(d.bat_b);
 
-  let headingRaw = d.heading ?? d.cog ?? d.wd ?? 0;
-  let h = normalize(Number(headingRaw));
+  let h = Number(d.heading ?? d.cog ?? d.wd ?? 0);
 
-  document.getElementById("heading").innerHTML = safeInt(h) + "°";
+  document.getElementById("heading").innerHTML = Math.round(h) + "°";
 
   document.getElementById("needle").style.transform =
-    "rotate(" + h + "deg) translateX(-50%)";
-
-  checkBattery(Number(d.bat_m), Number(d.bat_s), Number(d.bat_b));
+    `rotate(${h}deg) translateX(-50%)`;
 });
 
 </script>
