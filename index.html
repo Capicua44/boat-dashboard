@@ -6,7 +6,6 @@
 
 <title>Painel Náutico</title>
 
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b1220">
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -58,8 +57,8 @@ body {
 .value { font-size: 22px; color: #00ff99; font-weight: bold; }
 
 .compass {
-  width: 120px;
-  height: 120px;
+  width: 150px;
+  height: 150px;
   margin: 10px auto;
   border-radius: 50%;
   border: 3px solid #00d4ff;
@@ -70,7 +69,7 @@ body {
 #needle {
   position: absolute;
   width: 2px;
-  height: 55px;
+  height: 65px;
   background: red;
   top: 50%;
   left: 50%;
@@ -86,12 +85,6 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%,-50%);
-}
-
-.windBox {
-  text-align: center;
-  margin-top: 6px;
-  color: #00d4ff;
 }
 
 .alarm {
@@ -115,8 +108,9 @@ body {
 
 <div id="status" class="status offline">OFFLINE</div>
 
+<!-- COMPASS / VENTO RELATIVO -->
 <div class="card">
-  <div class="title">Bússola</div>
+  <div class="title">Vento relativo à proa</div>
 
   <div class="compass">
     <div id="needle"></div>
@@ -124,12 +118,9 @@ body {
   </div>
 
   <div class="value" id="heading">--</div>
-
-  <div class="windBox">
-    Vento: <span id="wsTop">--</span> kt
-  </div>
 </div>
 
+<!-- ALARME GLOBAL -->
 <div id="alarm" class="alarm">Sistema OK</div>
 
 <div class="grid">
@@ -145,17 +136,12 @@ body {
   </div>
 
   <div class="card">
-    <div class="title">Vento</div>
+    <div class="title">Velocidade Vento</div>
     <div id="ws" class="value">--</div>
   </div>
 
   <div class="card">
-    <div class="title">Direção Vento</div>
-    <div id="wd" class="value">--</div>
-  </div>
-
-  <div class="card">
-    <div class="title">Temperatura</div>
+    <div class="title">Temperatura Água</div>
     <div id="temp" class="value">--</div>
   </div>
 
@@ -183,36 +169,48 @@ body {
 
 <script>
 
+//==============================
+// MQTT CONNECT
+//==============================
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
 client.on("connect", () => {
+  console.log("MQTT conectado");
   client.subscribe("boat/data");
-  client.subscribe("boat/status");
 });
 
+//==============================
+// BÚSSOLA RELATIVA
+//==============================
 function updateCompass(h) {
+
   document.getElementById("heading").innerHTML = h.toFixed(0) + "°";
 
+  // 0° = proa, +90 = boreste, -90 = bombordo
   document.getElementById("needle").style.transform =
-    "rotate(" + h + "deg) translateX(-50%)";
+    "translate(-50%, -100%) rotate(" + h + "deg)";
 }
 
+//==============================
+// ALARME BATERIAS
+//==============================
 function checkBattery(m, s, b) {
 
   const alarm = document.getElementById("alarm");
 
   if(m < 11.8 || s < 11.8 || b < 11.8) {
     alarm.className = "alarm danger";
-    alarm.innerHTML = "⚠ BAIXA TENSÃO!";
+    alarm.innerHTML = "⚠ BAIXA TENSÃO DETECTADA";
   } else {
     alarm.className = "alarm";
     alarm.innerHTML = "Sistema OK";
   }
 }
 
+//==============================
+// MQTT RECEIVE
+//==============================
 client.on("message", (topic, msg) => {
-
-  if(topic === "boat/status") return;
 
   let data;
   try {
@@ -221,33 +219,34 @@ client.on("message", (topic, msg) => {
     return;
   }
 
+  document.getElementById("status").innerHTML = "ONLINE";
+  document.getElementById("status").className = "status online";
+
+  // GPS
   document.getElementById("lat").innerHTML = data.lat?.toFixed(6) ?? "--";
   document.getElementById("lon").innerHTML = data.lon?.toFixed(6) ?? "--";
 
+  // SENSOR
   document.getElementById("ws").innerHTML = data.ws?.toFixed(1) ?? "--";
-  document.getElementById("wsTop").innerHTML = data.ws?.toFixed(1) ?? "--";
-  document.getElementById("wd").innerHTML = data.wd?.toFixed(0) ?? "--";
-
   document.getElementById("temp").innerHTML = data.temp?.toFixed(1) ?? "--";
   document.getElementById("depth").innerHTML = data.depth?.toFixed(1) ?? "--";
 
+  // BATERIAS
   document.getElementById("bat_m").innerHTML = data.bat_m?.toFixed(2) ?? "--";
   document.getElementById("bat_s").innerHTML = data.bat_s?.toFixed(2) ?? "--";
-  document.getElementById("bat_bow").innerHTML = data.bat_bow?.toFixed(2) ?? "--";
+  document.getElementById("bat_b").innerHTML = data.bat_bow?.toFixed(2) ?? "--";
 
-  updateCompass(data.heading ?? data.wd ?? 0);
+  // COMPASS / VENTO RELATIVO
+  updateCompass(data.wd ?? 0);
 
-  checkBattery(
-    data.bat_m ?? 0,
-    data.bat_s ?? 0,
-    data.bat_bow ?? 0
-  );
-
+  // ALARMES
+  checkBattery(data.bat_m, data.bat_s, data.bat_bow);
 });
 
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
+//==============================
+// SW (DESATIVADO PARA EVITAR BUG)
+//==============================
+// navigator.serviceWorker.register('sw.js');
 
 </script>
 
