@@ -12,7 +12,6 @@
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
-
 body {
   margin: 0;
   font-family: Arial;
@@ -20,7 +19,6 @@ body {
   color: white;
 }
 
-/* HEADER */
 .header {
   background: #0f1b33;
   padding: 14px;
@@ -30,7 +28,6 @@ body {
   color: #00d4ff;
 }
 
-/* STATUS */
 .status {
   margin: 10px;
   padding: 10px;
@@ -43,7 +40,6 @@ body {
 .online { color: #00ff99; }
 .offline { color: #ff4d4d; }
 
-/* GRID */
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -51,30 +47,16 @@ body {
   padding: 10px;
 }
 
-/* CARD */
 .card {
   background: #142642;
   padding: 14px;
   border-radius: 14px;
   text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.title {
-  font-size: 12px;
-  color: #aaa;
-}
+.title { font-size: 12px; color: #aaa; }
+.value { font-size: 22px; color: #00ff99; font-weight: bold; }
 
-.value {
-  font-size: 22px;
-  color: #00ff99;
-  font-weight: bold;
-  margin-top: 5px;
-}
-
-/* ========================= */
-/* BÚSSOLA (30% MENOR)       */
-/* ========================= */
 .compass {
   width: 120px;
   height: 120px;
@@ -93,7 +75,6 @@ body {
   top: 50%;
   left: 50%;
   transform-origin: bottom center;
-  transform: rotate(0deg) translateX(-50%);
 }
 
 #centerDot {
@@ -107,15 +88,12 @@ body {
   transform: translate(-50%,-50%);
 }
 
-/* VENTO ABAIXO DO INSTRUMENTO */
 .windBox {
   text-align: center;
   margin-top: 6px;
-  font-size: 14px;
   color: #00d4ff;
 }
 
-/* ALARME */
 .alarm {
   margin: 10px;
   padding: 12px;
@@ -126,10 +104,8 @@ body {
 
 .danger {
   background: #ff2d2d;
-  color: white;
   font-weight: bold;
 }
-
 </style>
 </head>
 
@@ -139,11 +115,8 @@ body {
 
 <div id="status" class="status offline">OFFLINE</div>
 
-<!-- ===================== -->
-<!-- BÚSSOLA -->
-<!-- ===================== -->
 <div class="card">
-  <div class="title">Bússola (Proa = 0°)</div>
+  <div class="title">Bússola</div>
 
   <div class="compass">
     <div id="needle"></div>
@@ -157,10 +130,8 @@ body {
   </div>
 </div>
 
-<!-- ALARME -->
 <div id="alarm" class="alarm">Sistema OK</div>
 
-<!-- GRID -->
 <div class="grid">
 
   <div class="card">
@@ -174,17 +145,17 @@ body {
   </div>
 
   <div class="card">
-    <div class="title">Vento (kt)</div>
+    <div class="title">Vento</div>
     <div id="ws" class="value">--</div>
   </div>
 
   <div class="card">
-    <div class="title">Direção do Vento</div>
+    <div class="title">Direção Vento</div>
     <div id="wd" class="value">--</div>
   </div>
 
   <div class="card">
-    <div class="title">Temperatura da Água</div>
+    <div class="title">Temperatura</div>
     <div id="temp" class="value">--</div>
   </div>
 
@@ -204,7 +175,7 @@ body {
   </div>
 
   <div class="card">
-    <div class="title">Bateria Motor de Proa</div>
+    <div class="title">Bateria Proa</div>
     <div id="bat_bow" class="value">--</div>
   </div>
 
@@ -212,9 +183,6 @@ body {
 
 <script>
 
-//==============================
-// MQTT
-//==============================
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
 client.on("connect", () => {
@@ -222,9 +190,6 @@ client.on("connect", () => {
   client.subscribe("boat/status");
 });
 
-//==============================
-// BÚSSOLA
-//==============================
 function updateCompass(h) {
   document.getElementById("heading").innerHTML = h.toFixed(0) + "°";
 
@@ -232,58 +197,40 @@ function updateCompass(h) {
     "rotate(" + h + "deg) translateX(-50%)";
 }
 
-//==============================
-// ALARME BATERIAS
-//==============================
-function checkBattery(m, s, bow) {
+function checkBattery(m, s, b) {
 
   const alarm = document.getElementById("alarm");
 
-  if(m < 11.8 || s < 11.8 || bow < 11.8) {
+  if(m < 11.8 || s < 11.8 || b < 11.8) {
     alarm.className = "alarm danger";
-    alarm.innerHTML = "⚠ BAIXA TENSÃO DETECTADA!";
+    alarm.innerHTML = "⚠ BAIXA TENSÃO!";
   } else {
     alarm.className = "alarm";
     alarm.innerHTML = "Sistema OK";
   }
 }
 
-//==============================
-// MQTT RECEIVE
-//==============================
 client.on("message", (topic, msg) => {
 
-  const data = JSON.parse(msg.toString());
+  if(topic === "boat/status") return;
 
-  if(topic === "boat/status") {
-    const el = document.getElementById("status");
-
-    if(data === "ONLINE" || msg.toString() === "ONLINE") {
-      el.innerHTML = "ONLINE";
-      el.className = "status online";
-    } else {
-      el.innerHTML = "OFFLINE";
-      el.className = "status offline";
-    }
+  let data;
+  try {
+    data = JSON.parse(msg.toString());
+  } catch(e) {
     return;
   }
 
-  // GPS
   document.getElementById("lat").innerHTML = data.lat?.toFixed(6) ?? "--";
   document.getElementById("lon").innerHTML = data.lon?.toFixed(6) ?? "--";
 
-  // vento
   document.getElementById("ws").innerHTML = data.ws?.toFixed(1) ?? "--";
   document.getElementById("wsTop").innerHTML = data.ws?.toFixed(1) ?? "--";
   document.getElementById("wd").innerHTML = data.wd?.toFixed(0) ?? "--";
 
-  // água
   document.getElementById("temp").innerHTML = data.temp?.toFixed(1) ?? "--";
-
-  // profundidade
   document.getElementById("depth").innerHTML = data.depth?.toFixed(1) ?? "--";
 
-  // baterias
   document.getElementById("bat_m").innerHTML = data.bat_m?.toFixed(2) ?? "--";
   document.getElementById("bat_s").innerHTML = data.bat_s?.toFixed(2) ?? "--";
   document.getElementById("bat_bow").innerHTML = data.bat_bow?.toFixed(2) ?? "--";
@@ -297,6 +244,10 @@ client.on("message", (topic, msg) => {
   );
 
 });
+
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
 
 </script>
 
