@@ -106,6 +106,7 @@ body {
 
 <div id="status" class="status offline">OFFLINE</div>
 
+<!-- COMPASS -->
 <div class="card">
   <div class="title">Bússola</div>
 
@@ -123,14 +124,17 @@ body {
 
 <div id="alarm" class="alarm">Sistema OK</div>
 
+<!-- DATA PANELS (TEMPERATURA AL FINAL) -->
 <div class="card">Latitude: <div class="value" id="lat">--</div></div>
 <div class="card">Longitude: <div class="value" id="lon">--</div></div>
-<div class="card">Temperatura: <div class="value" id="temp">--</div></div>
 <div class="card">Profundidade: <div class="value" id="depth">--</div></div>
 
 <div class="card">Bateria Motor: <div class="value" id="bat_m">--</div></div>
 <div class="card">Bateria Serviço: <div class="value" id="bat_s">--</div></div>
 <div class="card">Bateria Proa: <div class="value" id="bat_b">--</div></div>
+
+<!-- 🔥 TEMPERATURA MOVIDA AL FINAL -->
+<div class="card">Temperatura: <div class="value" id="temp">--</div></div>
 
 <script>
 
@@ -144,17 +148,14 @@ client.on("connect", () => {
   client.subscribe("boat/status");
 });
 
-/* ---------------- SAFE NUMBER PARSER ---------------- */
-function safeNumber(v, decimals = 2) {
+/* SAFE FORMAT */
+function safeNumber(v, d=2) {
   if (v === undefined || v === null || v === "") return "--";
-
   let n = Number(String(v).replace(",", "."));
   if (isNaN(n)) return "--";
-
-  return n.toFixed(decimals);
+  return n.toFixed(d);
 }
 
-/* ---------------- SAFE INT ---------------- */
 function safeInt(v) {
   if (v === undefined || v === null || v === "") return "--";
   let n = Number(v);
@@ -162,7 +163,10 @@ function safeInt(v) {
   return Math.round(n);
 }
 
-/* ---------------- BATTERY CHECK ---------------- */
+function normalize(h) {
+  return ((h + 360) % 360);
+}
+
 function checkBattery(m, s, b) {
   const alarm = document.getElementById("alarm");
 
@@ -173,11 +177,6 @@ function checkBattery(m, s, b) {
     alarm.className = "alarm";
     alarm.innerHTML = "Sistema OK";
   }
-}
-
-/* ---------------- NORMALIZE HEADING ---------------- */
-function normalize(h) {
-  return ((h + 360) % 360);
 }
 
 client.on("message", (topic, msg) => {
@@ -191,27 +190,19 @@ client.on("message", (topic, msg) => {
     return;
   }
 
-  console.log("MQTT:", d); // DEBUG
+  console.log("MQTT:", d);
 
-  /* GPS */
   document.getElementById("lat").innerHTML = d.lat ?? "--";
   document.getElementById("lon").innerHTML = d.lon ?? "--";
 
-  /* sensors */
   document.getElementById("wsTop").innerHTML = safeNumber(d.ws, 1);
-  document.getElementById("temp").innerHTML = safeNumber(d.temp, 1);
   document.getElementById("depth").innerHTML = safeNumber(d.depth, 1);
+  document.getElementById("temp").innerHTML = safeNumber(d.temp, 1);
 
-  /* batteries */
-  let bat_m = safeNumber(d.bat_m);
-  let bat_s = safeNumber(d.bat_s);
-  let bat_b = safeNumber(d.bat_b);
+  document.getElementById("bat_m").innerHTML = safeNumber(d.bat_m);
+  document.getElementById("bat_s").innerHTML = safeNumber(d.bat_s);
+  document.getElementById("bat_b").innerHTML = safeNumber(d.bat_b);
 
-  document.getElementById("bat_m").innerHTML = bat_m;
-  document.getElementById("bat_s").innerHTML = bat_s;
-  document.getElementById("bat_b").innerHTML = bat_b;
-
-  /* compass */
   let headingRaw = d.heading ?? d.cog ?? d.wd ?? 0;
   let h = normalize(Number(headingRaw));
 
@@ -220,7 +211,6 @@ client.on("message", (topic, msg) => {
   document.getElementById("needle").style.transform =
     "rotate(" + h + "deg) translateX(-50%)";
 
-  /* alarm */
   checkBattery(Number(d.bat_m), Number(d.bat_s), Number(d.bat_b));
 });
 
