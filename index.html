@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="pt">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Boat Dashboard</title>
+<title>Painel Náutico</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b1220">
@@ -74,20 +74,52 @@ body {
 
 /* COMPASS */
 .compass {
-  width: 120px;
-  height: 120px;
+  width: 180px;
+  height: 180px;
   margin: 10px auto;
   border-radius: 50%;
   border: 3px solid #00d4ff;
   background: #0f1b33;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
 }
 
-#arrow {
-  font-size: 40px;
-  transition: transform 0.4s ease;
+/* ponteiro fino */
+#needle {
+  position: absolute;
+  width: 2px;
+  height: 80px;
+  background: red;
+  top: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  transform: rotate(0deg) translateX(-50%);
+}
+
+/* centro */
+#centerDot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+}
+
+/* ALARME */
+.alarm {
+  margin: 10px;
+  padding: 10px;
+  text-align: center;
+  border-radius: 10px;
+  background: #1a2d4d;
+}
+
+.danger {
+  background: #ff2d2d;
+  color: white;
+  font-weight: bold;
 }
 
 </style>
@@ -95,37 +127,50 @@ body {
 
 <body>
 
-<div class="header">⛵ BOAT CONTROL DASHBOARD</div>
+<div class="header">⛵ PAINEL NÁUTICO</div>
 
 <div id="status" class="status offline">OFFLINE</div>
 
 <!-- COMPASS -->
 <div class="card">
-  <div class="title">Dirección del Viento</div>
+  <div class="title">Bússola (Proa = 0°)</div>
 
   <div class="compass">
-    <div id="arrow">⬆️</div>
+    <div id="needle"></div>
+    <div id="centerDot"></div>
   </div>
 
-  <div class="value" id="apparentWind">--</div>
-  <div class="title">Viento Aparente</div>
+  <div class="value" id="heading">--</div>
 </div>
 
-<!-- GRID DATA -->
+<!-- ALARME -->
+<div id="alarm" class="alarm">Sistema OK</div>
+
+<!-- GRID -->
 <div class="grid">
 
   <div class="card">
-    <div class="title">Wind Speed</div>
+    <div class="title">Latitude</div>
+    <div id="lat" class="value">--</div>
+  </div>
+
+  <div class="card">
+    <div class="title">Longitude</div>
+    <div id="lon" class="value">--</div>
+  </div>
+
+  <div class="card">
+    <div class="title">Vento (kt)</div>
     <div id="ws" class="value">--</div>
   </div>
 
   <div class="card">
-    <div class="title">Wind Dir</div>
+    <div class="title">Direção do Vento</div>
     <div id="wd" class="value">--</div>
   </div>
 
   <div class="card">
-    <div class="title">Depth</div>
+    <div class="title">Profundidade</div>
     <div id="depth" class="value">--</div>
   </div>
 
@@ -135,12 +180,12 @@ body {
   </div>
 
   <div class="card">
-    <div class="title">Battery Motor</div>
+    <div class="title">Bateria Motor</div>
     <div id="bat_m" class="value">--</div>
   </div>
 
   <div class="card">
-    <div class="title">Battery Service</div>
+    <div class="title">Bateria Serviço</div>
     <div id="bat_s" class="value">--</div>
   </div>
 
@@ -149,19 +194,43 @@ body {
 <script>
 
 //==============================
-// MQTT CONNECT
+// MQTT
 //==============================
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
 client.on("connect", () => {
-  console.log("MQTT conectado");
-
   client.subscribe("boat/data");
   client.subscribe("boat/status");
 });
 
 //==============================
-// RECEIVE DATA
+// BÚSSOLA
+//==============================
+function updateCompass(h) {
+  document.getElementById("heading").innerHTML = h.toFixed(0) + "°";
+
+  document.getElementById("needle").style.transform =
+    "rotate(" + h + "deg) translateX(-50%)";
+}
+
+//==============================
+// ALARME
+//==============================
+function checkBattery(motor, service) {
+
+  const alarm = document.getElementById("alarm");
+
+  if(motor < 11.8 || service < 11.8) {
+    alarm.className = "alarm danger";
+    alarm.innerHTML = "⚠ BAIXA TENSÃO DETECTADA";
+  } else {
+    alarm.className = "alarm";
+    alarm.innerHTML = "Sistema OK";
+  }
+}
+
+//==============================
+// MQTT RECEIVE
 //==============================
 client.on("message", (topic, msg) => {
 
@@ -169,7 +238,6 @@ client.on("message", (topic, msg) => {
 
   // STATUS
   if(topic === "boat/status") {
-
     const el = document.getElementById("status");
 
     if(text === "ONLINE") {
@@ -179,40 +247,37 @@ client.on("message", (topic, msg) => {
       el.innerHTML = "OFFLINE";
       el.className = "status offline";
     }
-
     return;
   }
 
-  // DATA JSON
+  // DATA
   try {
+
     const data = JSON.parse(text);
 
-    // wind
-    document.getElementById("ws").innerHTML = data.ws.toFixed(1);
-    document.getElementById("wd").innerHTML = data.wd.toFixed(1);
-    document.getElementById("depth").innerHTML = data.depth.toFixed(1);
-    document.getElementById("rssi").innerHTML = data.rssi;
+    document.getElementById("ws").innerHTML = data.ws?.toFixed(1) ?? "--";
+    document.getElementById("wd").innerHTML = data.wd?.toFixed(0) ?? "--";
+    document.getElementById("depth").innerHTML = data.depth?.toFixed(1) ?? "--";
+    document.getElementById("rssi").innerHTML = data.rssi ?? "--";
 
-    // batteries
-    document.getElementById("bat_m").innerHTML = data.bat_m.toFixed(2);
-    document.getElementById("bat_s").innerHTML = data.bat_s.toFixed(2);
+    document.getElementById("bat_m").innerHTML = data.bat_m?.toFixed(2) ?? "--";
+    document.getElementById("bat_s").innerHTML = data.bat_s?.toFixed(2) ?? "--";
 
-    // COMPASS ROTATION
-    document.getElementById("arrow").style.transform =
-      "rotate(" + data.wd + "deg)";
+    document.getElementById("lat").innerHTML = data.lat?.toFixed(6) ?? "--";
+    document.getElementById("lon").innerHTML = data.lon?.toFixed(6) ?? "--";
 
-    // apparent wind
-    document.getElementById("apparentWind").innerHTML =
-      data.ws.toFixed(1) + " kt";
+    updateCompass(data.heading ?? data.wd ?? 0);
+
+    checkBattery(data.bat_m ?? 0, data.bat_s ?? 0);
 
   } catch(e) {
-    console.log("JSON error", e);
+    console.log("Erro JSON", e);
   }
 
 });
 
 //==============================
-// PWA SERVICE WORKER
+// PWA
 //==============================
 if('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
