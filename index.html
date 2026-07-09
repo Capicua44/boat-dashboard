@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -9,251 +10,185 @@
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
+
 body {
-  margin: 0;
-  font-family: Arial;
-  background: #0b1220;
-  color: white;
+  margin:0;
+  font-family:Arial;
+  background:#0b1220;
+  color:white;
 }
+
 
 .header {
-  background: #0f1b33;
-  padding: 14px;
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  color: #00d4ff;
+  background:#0f1b33;
+  padding:14px;
+  text-align:center;
+  font-size:18px;
+  font-weight:bold;
+  color:#00d4ff;
 }
+
 
 .status {
-  margin: 10px;
-  padding: 10px;
-  text-align: center;
-  border-radius: 10px;
-  font-weight: bold;
-  background: #1a2d4d;
+  margin:10px;
+  padding:10px;
+  text-align:center;
+  border-radius:10px;
+  font-weight:bold;
+  background:#1a2d4d;
 }
 
-.online { color: #00ff99; }
-.offline { color: #ff4d4d; }
+
+.online {
+  color:#00ff99;
+}
+
+
+.offline {
+  color:#ff4d4d;
+}
+
+
 
 .card {
-  background: #142642;
-  padding: 14px;
-  border-radius: 14px;
-  text-align: center;
-  margin: 10px;
+
+  background:#142642;
+
+  margin:10px;
+
+  padding:14px;
+
+  border-radius:14px;
+
+  text-align:center;
+
 }
 
-.title { font-size: 12px; color: #aaa; }
-.value { font-size: 22px; color: #00ff99; font-weight: bold; }
 
-/* =========================
-   BRÚJULA
-========================= */
-.compass {
-  width: 136px;
-  height: 136px;
-  margin: 10px auto;
-  border-radius: 50%;
-  border: 3px solid #00d4ff;
-  background: #0f1b33;
-  position: relative;
+
+.title {
+
+ font-size:12px;
+
+ color:#aaa;
+
 }
 
-/* aguja */
-#needle {
-  position: absolute;
-  width: 2px;
-  height: 55px;
-  background: red;
-  top: 50%;
-  left: 50%;
-  transform-origin: bottom center;
+
+
+.value {
+
+ font-size:22px;
+
+ font-weight:bold;
+
+ color:#00ff99;
+
 }
 
-/* centro */
-#centerDot {
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  background: white;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
+
+
+.grid3 {
+
+ display:grid;
+
+ grid-template-columns:
+ repeat(3,1fr);
+
+ gap:8px;
+
 }
 
-/* ticks */
-.tick {
-  position: absolute;
-  width: 2px;
-  height: 8px;
-  background: #00d4ff;
-  transform: translate(-50%, -50%);
+
+
+.grid2 {
+
+ display:grid;
+
+ grid-template-columns:
+ repeat(2,1fr);
+
+ gap:8px;
+
 }
 
-/* cardinales */
-.cardinal {
-  position: absolute;
-  font-size: 10px;
-  color: #00ff99;
-  font-weight: bold;
+
+
+.box {
+
+ background:#0f1b33;
+
+ padding:10px;
+
+ border-radius:10px;
+
 }
 
-#north { top: 4px; left: 50%; transform: translateX(-50%); }
-#south { bottom: 4px; left: 50%; transform: translateX(-50%); }
-#east  { right: 4px; top: 50%; transform: translateY(-50%); }
-#west  { left: 4px; top: 50%; transform: translateY(-50%); }
 
-.windBox {
-  text-align: center;
-  margin-top: 8px;
-  color: #00d4ff;
+
+.label {
+
+ color:#aaa;
+
+ font-size:12px;
+
 }
+
+
 
 .alarm {
-  margin: 10px;
-  padding: 12px;
-  text-align: center;
-  border-radius: 10px;
-  background: #1a2d4d;
+
+ color:#ff3333 !important;
+
 }
 
-.danger {
-  background: #ff2d2d;
-  font-weight: bold;
+
+
+button {
+
+ width:100%;
+
+ padding:12px 5px;
+
+ border:0;
+
+ border-radius:10px;
+
+ background:#34495e;
+
+ color:white;
+
+ font-weight:bold;
+
+ font-size:14px;
+
 }
+
+
+
+.buttonOn {
+
+ background:#00a86b;
+
+}
+
+
+
 </style>
+
 </head>
+
 
 <body>
 
-<div class="header">⛵ PAINEL NÁUTICO</div>
 
-<div id="status" class="status offline">OFFLINE</div>
-
-<!-- COMPASS -->
-<div class="card">
-  <div class="title">Bússola</div>
-
-  <div class="compass">
-
-    <div id="north" class="cardinal">0°</div>
-    <div id="south" class="cardinal">180°</div>
-    <div id="east" class="cardinal">+90</div>
-    <div id="west" class="cardinal">-90</div>
-
-    <div id="needle"></div>
-    <div id="centerDot"></div>
-  </div>
-
-  <div class="value" id="heading">--</div>
-
-  <div class="windBox">
-    Vento: <span id="wsTop">--</span> kt
-  </div>
+<div class="header">
+⛵ PAINEL NÁUTICO
 </div>
 
-<div id="alarm" class="alarm">Sistema OK</div>
 
-<!-- GPS -->
-<div class="card">
-  <div class="title">GPS</div>
-  <div style="display:flex; justify-content:space-between; font-size:14px; color:#00ff99;">
-    <div>Lat: <span id="lat">--</span></div>
-    <div>Lon: <span id="lon">--</span></div>
-  </div>
+
+<div id="status" class="status offline">
+OFFLINE
 </div>
 
-<!-- DATOS -->
-<div class="card">Profundidade: <div class="value" id="depth">--</div></div>
-<div class="card">Bateria Motor: <div class="value" id="bat_m">--</div></div>
-<div class="card">Bateria Serviço: <div class="value" id="bat_s">--</div></div>
-<div class="card">Bateria Proa: <div class="value" id="bat_b">--</div></div>
-<div class="card">Temperatura: <div class="value" id="temp">--</div></div>
-
-<script>
-
-const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-
-client.on("connect", () => {
-  document.getElementById("status").innerHTML = "ONLINE";
-  document.getElementById("status").className = "status online";
-
-  client.subscribe("boat/data");
-});
-
-/* =========================
-   TICKS CIRCULARES PERFECTOS
-========================= */
-const compass = document.querySelector(".compass");
-
-const centerX = 68;
-const centerY = 68;
-const radius = 60;
-
-for (let i = 0; i < 360; i += 10) {
-  const tick = document.createElement("div");
-  tick.className = "tick";
-
-  const rad = i * Math.PI / 180;
-
-  const x = centerX + Math.sin(rad) * radius;
-  const y = centerY - Math.cos(rad) * radius;
-
-  tick.style.left = x + "px";
-  tick.style.top = y + "px";
-
-  compass.appendChild(tick);
-}
-
-/* SAFE */
-function safeNumber(v, d=2) {
-  if (v === undefined || v === null || v === "") return "--";
-  let n = Number(String(v).replace(",", "."));
-  if (isNaN(n)) return "--";
-  return n.toFixed(d);
-}
-
-function safeInt(v) {
-  if (v === undefined || v === null || v === "") return "--";
-  let n = Number(v);
-  if (isNaN(n)) return "--";
-  return Math.round(n);
-}
-
-/* MQTT */
-client.on("message", (topic, msg) => {
-
-  let d;
-  try { d = JSON.parse(msg.toString()); }
-  catch(e) { return; }
-
-  document.getElementById("lat").innerHTML = d.lat ?? "--";
-  document.getElementById("lon").innerHTML = d.lon ?? "--";
-
-  document.getElementById("wsTop").innerHTML = safeNumber(d.ws, 1);
-  document.getElementById("depth").innerHTML = safeNumber(d.depth, 1);
-  document.getElementById("temp").innerHTML = safeNumber(d.temp, 1);
-
-  document.getElementById("bat_m").innerHTML = safeNumber(d.bat_m);
-  document.getElementById("bat_s").innerHTML = safeNumber(d.bat_s);
-  document.getElementById("bat_b").innerHTML = safeNumber(d.bat_b);
-
-  /* ⚡ FIX BRÚJULA (CORRECCIÓN REAL) */
-  let raw = Number(d.heading ?? d.cog ?? d.wd ?? 0);
-
-  // normaliza y corrige offset visual
-  let h = (raw + 360) % 360;
-
-  document.getElementById("heading").innerHTML = Math.round(h) + "°";
-
-  document.getElementById("needle").style.transform =
-    `rotate(${h}deg) translateX(-50%)`;
-});
-
-</script>
-
-</body>
-</html>
