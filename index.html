@@ -20,13 +20,16 @@ body { margin:0; font-family:Arial,sans-serif; background:#63c7e8; color:#003344
 .row .card { flex:1; min-width:90px; }
 .alarm { color:red !important; }
 .button { background:#006080; color:white; cursor:pointer; }
-.button.on { background:#ffcc00; color:#000; } /* CAMBIO: Amarillo */
-.button.off { background:#555; color:white; }
+/* Botón ON Amarillo Intenso */
+.button.on { background:#FFD700; color:#000; }
+/* Botón OFF Gris Claro */
+.button.off { background:#AAAAAA; color:#FFFFFF; }
 .statusGPS { font-weight:bold; color:#008000; }
 </style>
 </head>
 
 <body>
+
 <div class="header">⛵ PANEL CAPICUA</div>
 
 <div class="connection">
@@ -66,53 +69,73 @@ body { margin:0; font-family:Arial,sans-serif; background:#63c7e8; color:#003344
 
 <script>
 const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-client.on("connect",()=>{ console.log("MQTT conectado"); client.subscribe("boat/data"); });
+
+client.on("connect",()=>{
+    console.log("MQTT conectado");
+    client.subscribe("boat/data");
+});
 
 function led(id,state) { document.getElementById(id).style.background = state ? "green" : "red"; }
-function number(v) { if(v===undefined || v===null) return "--"; return Number(v).toFixed(1); }
+
+function number(v) {
+    if(v===undefined || v===null) return "--";
+    return Number(v).toFixed(1);
+}
 
 function updateOutput(id,state) {
     let e = document.getElementById(id);
-    if(state) { e.className = "card button on"; e.querySelector(".value").innerHTML = "ON"; }
-    else { e.className = "card button off"; e.querySelector(".value").innerHTML = "OFF"; }
+    if(state) {
+        e.className = "card button on";
+        e.querySelector(".value").innerHTML = "ON";
+    } else {
+        e.className = "card button off";
+        e.querySelector(".value").innerHTML = "OFF";
+    }
 }
 
 client.on("message",(topic,msg)=>{
     let d;
     try { d = JSON.parse(msg.toString()); } catch(e) { return; }
+    
     led("ledWifi", d.wifi=="OK");
     led("ledMQTT", d.mqtt=="OK");
     led("ledBT", d.bt=="OK");
+
     document.getElementById("lat").innerHTML = d.lat ?? "--";
     document.getElementById("lon").innerHTML = d.lon ?? "--";
     document.getElementById("gps").innerHTML = d.gps ? "GPS OK" : "GPS SIN SEÑAL";
+
     document.getElementById("wind").innerHTML = number(d.wind_speed);
     document.getElementById("angle").innerHTML = Math.round(d.wind_angle ?? 0);
     document.getElementById("depth").innerHTML = number(d.depth);
+
     let bm = document.getElementById("bat_m");
     let bs = document.getElementById("bat_s");
     let bb = document.getElementById("bat_b");
+
     bm.innerHTML = number(d.bat_m) +" V";
     bs.innerHTML = number(d.bat_s) +" V";
     bb.innerHTML = number(d.bat_b) +" V";
+
     bm.className = d.alarm_m ? "value alarm": "value";
     bs.className = d.alarm_s ? "value alarm": "value";
     bb.className = d.alarm_b ? "value alarm": "value";
+
     document.getElementById("temp").innerHTML = number(d.water_temp);
+
     updateOutput("gen", d.out1);
     updateOutput("inst", d.out2);
     updateOutput("luz", d.out3);
 });
 
-// CAMBIO: Formato JSON correcto para tu ESP32
 function command(cmd, state) {
     client.publish("boat/cmd", JSON.stringify({ "cmd": cmd, "value": state }));
 }
 
-// CAMBIO: Lógica de toggle (ON/OFF)
 document.getElementById("gen").onclick = () => command("out1", !document.getElementById("gen").classList.contains("on"));
 document.getElementById("inst").onclick = () => command("out2", !document.getElementById("inst").classList.contains("on"));
 document.getElementById("luz").onclick = () => command("out3", !document.getElementById("luz").classList.contains("on"));
 </script>
+
 </body>
 </html>
