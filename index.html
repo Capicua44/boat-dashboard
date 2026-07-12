@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="pt">
 
@@ -103,33 +102,25 @@ body {
 
 
 .button {
-
     background:#006080;
     color:white;
     cursor:pointer;
-
 }
 
 
 .button.on {
-
     background:#00aa55;
-
 }
 
 
 .button.off {
-
     background:#555;
-
 }
 
 
 .statusGPS {
-
     font-weight:bold;
     color:#008000;
-
 }
 
 
@@ -170,12 +161,12 @@ Bluetooth MiniPlex
 
 
 
-
 <!-- GPS -->
 
 <div class="card">
 
 <div class="title">GPS</div>
+
 
 <div class="row">
 
@@ -218,7 +209,6 @@ LONGITUD
 
 
 
-
 <!-- VIENTO -->
 
 <div class="row">
@@ -255,7 +245,6 @@ ANGULO
 </div>
 
 
-
 <div class="card">
 
 <div class="title">
@@ -272,7 +261,6 @@ PROFUNDIDAD
 
 
 </div>
-
 
 
 
@@ -294,6 +282,7 @@ MOTOR
 </div>
 
 
+
 <div class="card">
 
 <div class="title">
@@ -305,6 +294,7 @@ SERVICIO
 </div>
 
 </div>
+
 
 
 <div class="card">
@@ -324,9 +314,7 @@ PROA
 
 
 
-
 <!-- TEMPERATURA -->
-
 
 <div class="card">
 
@@ -343,67 +331,7 @@ TEMPERATURA AGUA
 
 </div>
 
-</div>
-
-
-
-
-
-<!-- SALIDAS -->
-
-
-<div class="row">
-
-
-<div class="card button off" id="gen">
-
-<div class="title">
-GEN
-</div>
-
-<div class="value">
-OFF
-</div>
-
-</div>
-
-
-
-<div class="card button off" id="inst">
-
-<div class="title">
-INST
-</div>
-
-<div class="value">
-OFF
-</div>
-
-</div>
-
-
-
-<div class="card button off" id="luz">
-
-<div class="title">
-LUZ TOP
-</div>
-
-<div class="value">
-OFF
-</div>
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-<script>
+</div><script>
 
 
 const client =
@@ -413,13 +341,10 @@ mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
 client.on("connect",()=>{
 
+    client.subscribe("boat/data");
 
-client.subscribe("boat/data");
-
-
-document.body.style.borderTop =
-"5px solid green";
-
+    document.body.style.borderTop =
+    "5px solid green";
 
 });
 
@@ -429,49 +354,56 @@ document.body.style.borderTop =
 
 function led(id,on){
 
-document.getElementById(id).style.background =
-on ? "green" : "red";
+    document.getElementById(id).style.background =
+    on ? "green" : "red";
 
 }
+
+
 
 
 
 function number(v){
 
-if(v===undefined || v===null)
-return "--";
+    if(v===undefined || v===null)
+        return "--";
 
-return Number(v).toFixed(1);
+    return Number(v).toFixed(1);
 
 }
+
+
 
 
 
 function updateOutput(id,state){
 
+    let e =
+    document.getElementById(id);
 
-let e=document.getElementById(id);
+
+    if(state){
+
+        e.className =
+        "card button on";
 
 
-if(state){
+        e.querySelector(".value").innerHTML =
+        "ON";
 
-e.className="card button on";
+    }
+    else{
 
-e.querySelector(".value").innerHTML="ON";
+        e.className =
+        "card button off";
+
+
+        e.querySelector(".value").innerHTML =
+        "OFF";
+
+    }
 
 }
-
-else{
-
-e.className="card button off";
-
-e.querySelector(".value").innerHTML="OFF";
-
-}
-
-
-}
-
 
 
 
@@ -480,98 +412,181 @@ e.querySelector(".value").innerHTML="OFF";
 client.on("message",(topic,msg)=>{
 
 
-let d;
-
-try{
-
-d=JSON.parse(msg);
-
-}
-
-catch(e){
-
-return;
-
-}
+    let d;
 
 
+    try{
 
+        d =
+        JSON.parse(msg);
 
+    }
 
-led("ledWifi",d.wifi=="OK");
+    catch(e){
 
-led("ledMQTT",d.mqtt=="OK");
+        return;
 
-led("ledBT",d.bt=="OK");
+    }
 
 
 
 
-document.getElementById("lat").innerHTML =
-d.lat ?? "--";
+    // ESTADOS
+
+    led(
+        "ledWifi",
+        d.wifi=="OK"
+    );
 
 
-document.getElementById("lon").innerHTML =
-d.lon ?? "--";
+    led(
+        "ledMQTT",
+        d.mqtt=="OK"
+    );
 
 
-
-document.getElementById("gps").innerHTML =
-d.gps ? "GPS OK" : "GPS SIN SEÑAL";
-
-
-
-document.getElementById("wind").innerHTML =
-number(d.ws);
-
-
-
-document.getElementById("angle").innerHTML =
-Math.round(d.wd ?? 0);
-
-
-
-document.getElementById("depth").innerHTML =
-number(d.depth);
+    led(
+        "ledBT",
+        d.bt=="OK"
+    );
 
 
 
 
-let bm=document.getElementById("bat_m");
-let bs=document.getElementById("bat_s");
-let bb=document.getElementById("bat_b");
+
+    // GPS
+
+    document.getElementById("lat").innerHTML =
+    d.lat ?? "--";
+
+
+    document.getElementById("lon").innerHTML =
+    d.lon ?? "--";
 
 
 
-bm.innerHTML=number(d.bat_m)+" V";
-bs.innerHTML=number(d.bat_s)+" V";
-bb.innerHTML=number(d.bat_b)+" V";
-
-
-
-bm.className =
-d.alarm_m ? "value alarm":"value";
-
-bs.className =
-d.alarm_s ? "value alarm":"value";
-
-bb.className =
-d.alarm_b ? "value alarm":"value";
+    document.getElementById("gps").innerHTML =
+    d.gps ?
+    "GPS OK" :
+    "GPS SIN SEÑAL";
 
 
 
 
-document.getElementById("temp").innerHTML =
-number(d.temp);
+
+    // VIENTO
+
+    document.getElementById("wind").innerHTML =
+    number(
+        d.wind_speed
+    );
+
+
+
+    document.getElementById("angle").innerHTML =
+    Math.round(
+        d.wind_angle ?? 0
+    );
 
 
 
 
-updateOutput("gen",d.out1);
+    // PROFUNDIDAD
 
-updateOutput("inst",d.out2);
+    document.getElementById("depth").innerHTML =
+    number(
+        d.depth
+    );
 
-updateOutput("luz",d.out3);
+
+
+
+
+    // BATERIAS
+
+
+    let bm =
+    document.getElementById("bat_m");
+
+
+    let bs =
+    document.getElementById("bat_s");
+
+
+    let bb =
+    document.getElementById("bat_b");
+
+
+
+
+    bm.innerHTML =
+    number(d.bat_m)
+    +" V";
+
+
+    bs.innerHTML =
+    number(d.bat_s)
+    +" V";
+
+
+    bb.innerHTML =
+    number(d.bat_b)
+    +" V";
+
+
+
+
+
+    bm.className =
+    d.alarm_m ?
+    "value alarm":
+    "value";
+
+
+    bs.className =
+    d.alarm_s ?
+    "value alarm":
+    "value";
+
+
+    bb.className =
+    d.alarm_b ?
+    "value alarm":
+    "value";
+
+
+
+
+
+    // TEMPERATURA AGUA
+
+    document.getElementById("temp").innerHTML =
+    number(
+        d.water_temp
+    );
+
+
+
+
+
+    // SALIDAS
+
+    updateOutput(
+        "gen",
+        d.out1
+    );
+
+
+    updateOutput(
+        "inst",
+        d.out2
+    );
+
+
+    updateOutput(
+        "luz",
+        d.out3
+    );
 
 
 
@@ -584,23 +599,47 @@ updateOutput("luz",d.out3);
 
 function command(output,state){
 
-client.publish(
-"boat/cmd",
-JSON.stringify({
-[output]:state
-})
-);
+
+    client.publish(
+
+        "boat/cmd",
+
+        JSON.stringify({
+
+            [output]:state
+
+        })
+
+    );
+
 
 }
 
 
 
 
-document.getElementById("gen").onclick=()=>command("out1",true);
 
-document.getElementById("inst").onclick=()=>command("out2",true);
+document.getElementById("gen").onclick =
+()=>command(
+    "out1",
+    true
+);
 
-document.getElementById("luz").onclick=()=>command("out3",true);
+
+
+document.getElementById("inst").onclick =
+()=>command(
+    "out2",
+    true
+);
+
+
+
+document.getElementById("luz").onclick =
+()=>command(
+    "out3",
+    true
+);
 
 
 
@@ -608,5 +647,5 @@ document.getElementById("luz").onclick=()=>command("out3",true);
 
 
 </body>
+
 </html>
-```
