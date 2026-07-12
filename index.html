@@ -10,154 +10,216 @@
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
+
 <style>
 
 body {
     margin:0;
-    font-family:Arial, sans-serif;
+    font-family:Arial,sans-serif;
     background:#63c7e8;
     color:#003344;
 }
 
 
 .header {
+
     background:#005b75;
     color:white;
     text-align:center;
     padding:15px;
     font-size:24px;
     font-weight:bold;
+
 }
 
 
+
 .connection {
+
     display:flex;
     justify-content:center;
     gap:15px;
     margin:12px;
     flex-wrap:wrap;
+
 }
 
 
+
 .conn {
+
     background:white;
     padding:8px 12px;
     border-radius:12px;
     font-weight:bold;
+
 }
 
 
+
 .led {
+
     width:12px;
     height:12px;
     display:inline-block;
     border-radius:50%;
     background:red;
     margin-right:5px;
+
 }
 
 
+
 .card {
+
     background:white;
     margin:8px;
     padding:10px;
     border-radius:14px;
     text-align:center;
     box-shadow:0 2px 5px #777;
+
 }
+
 
 
 .title {
+
     font-size:13px;
     color:#006080;
     font-weight:bold;
+
 }
 
 
+
 .value {
+
     font-size:25px;
     font-weight:bold;
     color:#008000;
     margin-top:5px;
+
 }
 
 
+
 .row {
+
     display:flex;
     justify-content:center;
     gap:8px;
     flex-wrap:wrap;
+
 }
+
 
 
 .row .card {
+
     flex:1;
     min-width:90px;
+
 }
+
 
 
 .alarm {
+
     color:red !important;
+
 }
+
 
 
 .button {
+
     background:#006080;
     color:white;
     cursor:pointer;
+
 }
+
 
 
 .button.on {
+
     background:#00aa55;
+
 }
+
 
 
 .button.off {
+
     background:#555;
+
 }
 
 
+
 .statusGPS {
+
     font-weight:bold;
     color:#008000;
+
 }
 
 
 </style>
 
+
 </head>
+
 
 
 <body>
 
 
+
 <div class="header">
+
 ⛵ PANEL CAPICUA
+
 </div>
 
 
 
 <div class="connection">
 
+
 <div class="conn">
+
 <span id="ledWifi" class="led"></span>
+
 WiFi ESP32
+
 </div>
 
 
+
 <div class="conn">
+
 <span id="ledMQTT" class="led"></span>
+
 MQTT ESP32
+
 </div>
+
 
 
 <div class="conn">
+
 <span id="ledBT" class="led"></span>
+
 Bluetooth MiniPlex
-</div>
 
 </div>
+
+
+</div>
+
+
 
 
 
@@ -165,7 +227,11 @@ Bluetooth MiniPlex
 
 <div class="card">
 
-<div class="title">GPS</div>
+
+<div class="title">
+GPS
+</div>
+
 
 
 <div class="row">
@@ -177,96 +243,137 @@ Bluetooth MiniPlex
 LATITUD
 </div>
 
+
 <div class="value" id="lat">
 --
 </div>
 
+
 </div>
 
 
+
 <div class="card">
+
 
 <div class="title">
 LONGITUD
 </div>
 
+
 <div class="value" id="lon">
 --
 </div>
 
+
 </div>
 
 
+
 </div>
+
 
 
 <div id="gps" class="statusGPS">
+
 --
+
 </div>
 
 
+
 </div>
+
+
+
+
 
 
 
 <!-- VIENTO -->
 
+
 <div class="row">
 
 
 <div class="card">
+
 
 <div class="title">
 VIENTO
 </div>
 
+
 <div class="value">
+
 <span id="wind">
 --
 </span> kt
-</div>
 
 </div>
+
+
+</div>
+
 
 
 
 <div class="card">
+
 
 <div class="title">
 ANGULO
 </div>
 
+
 <div class="value">
+
 <span id="angle">
 --
 </span>°
-</div>
 
 </div>
+
+
+</div>
+
+
+
 
 
 <div class="card">
+
 
 <div class="title">
 PROFUNDIDAD
 </div>
 
+
 <div class="value">
+
 <span id="depth">
 --
 </span> m
-</div>
 
 </div>
 
 
 </div>
+
+
+
+</div>
+
+
+
 
 
 
 <!-- BATERIAS -->
 
+
 <div class="row">
+
 
 
 <div class="card">
@@ -275,11 +382,14 @@ PROFUNDIDAD
 MOTOR
 </div>
 
+
 <div class="value" id="bat_m">
 --
 </div>
 
+
 </div>
+
 
 
 
@@ -289,11 +399,15 @@ MOTOR
 SERVICIO
 </div>
 
+
 <div class="value" id="bat_s">
 --
 </div>
 
+
 </div>
+
+
 
 
 
@@ -303,33 +417,116 @@ SERVICIO
 PROA
 </div>
 
+
 <div class="value" id="bat_b">
 --
 </div>
 
+
 </div>
 
 
+
 </div>
+
+
+
 
 
 
 <!-- TEMPERATURA -->
 
+
 <div class="card">
 
+
 <div class="title">
+
 TEMPERATURA AGUA
+
 </div>
+
 
 
 <div class="value">
 
+
 <span id="temp">
+
 --
+
 </span> °C
 
+
 </div>
+
+
+</div>
+
+
+
+
+
+
+<!-- SALIDAS -->
+
+
+<div class="row">
+
+
+
+<div class="card button off" id="gen">
+
+
+<div class="title">
+GEN
+</div>
+
+
+<div class="value">
+OFF
+</div>
+
+
+</div>
+
+
+
+
+<div class="card button off" id="inst">
+
+
+<div class="title">
+INST
+</div>
+
+
+<div class="value">
+OFF
+</div>
+
+
+</div>
+
+
+
+
+<div class="card button off" id="luz">
+
+
+<div class="title">
+LUZ TOP
+</div>
+
+
+<div class="value">
+OFF
+</div>
+
+
+</div>
+
+
 
 </div><script>
 
@@ -341,10 +538,14 @@ mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
 client.on("connect",()=>{
 
-    client.subscribe("boat/data");
 
-    document.body.style.borderTop =
-    "5px solid green";
+    console.log("MQTT conectado");
+
+
+    client.subscribe(
+        "boat/data"
+    );
+
 
 });
 
@@ -352,10 +553,11 @@ client.on("connect",()=>{
 
 
 
-function led(id,on){
+function led(id,state)
+{
 
     document.getElementById(id).style.background =
-    on ? "green" : "red";
+    state ? "green" : "red";
 
 }
 
@@ -363,10 +565,15 @@ function led(id,on){
 
 
 
-function number(v){
+function number(v)
+{
 
-    if(v===undefined || v===null)
+    if(
+        v===undefined ||
+        v===null
+    )
         return "--";
+
 
     return Number(v).toFixed(1);
 
@@ -376,13 +583,15 @@ function number(v){
 
 
 
-function updateOutput(id,state){
+function updateOutput(id,state)
+{
 
     let e =
     document.getElementById(id);
 
 
-    if(state){
+    if(state)
+    {
 
         e.className =
         "card button on";
@@ -392,7 +601,8 @@ function updateOutput(id,state){
         "ON";
 
     }
-    else{
+    else
+    {
 
         e.className =
         "card button off";
@@ -409,20 +619,26 @@ function updateOutput(id,state){
 
 
 
+
+
 client.on("message",(topic,msg)=>{
 
 
     let d;
 
 
-    try{
+    try
+    {
 
         d =
-        JSON.parse(msg);
+        JSON.parse(
+            msg.toString()
+        );
 
     }
 
-    catch(e){
+    catch(e)
+    {
 
         return;
 
@@ -431,7 +647,17 @@ client.on("message",(topic,msg)=>{
 
 
 
-    // ESTADOS
+
+    console.log(
+        d
+    );
+
+
+
+
+
+    // ESTADOS ESP32
+
 
     led(
         "ledWifi",
@@ -454,7 +680,9 @@ client.on("message",(topic,msg)=>{
 
 
 
+
     // GPS
+
 
     document.getElementById("lat").innerHTML =
     d.lat ?? "--";
@@ -474,7 +702,11 @@ client.on("message",(topic,msg)=>{
 
 
 
+
+
+
     // VIENTO
+
 
     document.getElementById("wind").innerHTML =
     number(
@@ -491,12 +723,18 @@ client.on("message",(topic,msg)=>{
 
 
 
+
+
+
     // PROFUNDIDAD
+
 
     document.getElementById("depth").innerHTML =
     number(
         d.depth
     );
+
+
 
 
 
@@ -536,7 +774,6 @@ client.on("message",(topic,msg)=>{
 
 
 
-
     bm.className =
     d.alarm_m ?
     "value alarm":
@@ -558,7 +795,10 @@ client.on("message",(topic,msg)=>{
 
 
 
-    // TEMPERATURA AGUA
+
+
+    // TEMPERATURA
+
 
     document.getElementById("temp").innerHTML =
     number(
@@ -569,7 +809,10 @@ client.on("message",(topic,msg)=>{
 
 
 
+
+
     // SALIDAS
+
 
     updateOutput(
         "gen",
@@ -597,7 +840,9 @@ client.on("message",(topic,msg)=>{
 
 
 
-function command(output,state){
+
+function command(output,state)
+{
 
 
     client.publish(
@@ -614,6 +859,8 @@ function command(output,state){
 
 
 }
+
+
 
 
 
