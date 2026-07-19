@@ -1,81 +1,111 @@
-<script>
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-    let lastData = {};
-    let lastUpdateTimestamp = 0; 
-
-    client.on("connect", () => {
-        client.subscribe("boat/data");
-    });
-
-    client.on("message", (topic, msg) => {
-        const now = Date.now();
-        // Filtro de tasa: 100ms es suficiente para que el navegador "respire"
-        if (now - lastUpdateTimestamp < 100) return; 
-        lastUpdateTimestamp = now;
-
-        let d;
-        try { d = JSON.parse(msg.toString()); } catch(e) { return; }
-
-        // Actualizaciones directas
-        updateIfChanged("lat", d.lat);
-        updateIfChanged("lon", d.lon);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Velero</title>
+    
+    <style>
+        /* ========================================== */
+        /* 1. AQUÍ VAN TUS ESTILOS (CSS) ORIGINALES   */
+        /* Pega aquí tus colores, fondos y diseño     */
+        /* ========================================== */
         
-        updateIfChanged("gps", d.gps ? "GPS OK" : "GPS SIN SEÑAL");
-        updateIfChanged("wind", formatVal(d.wind_speed));
-        updateIfChanged("angle", Math.round(d.wind_angle ?? 0));
-        updateIfChanged("depth", formatVal(d.depth));
-        updateIfChanged("temp", formatVal(d.water_temp));
+    </style>
 
-        // Baterías (ya llegan con 1 decimal desde el ESP32)
-        updateBattery("bat_m", d.bat_m, d.alarm_m);
-        updateBattery("bat_s", d.bat_s, d.alarm_s);
-        updateBattery("bat_b", d.bat_b, d.alarm_b);
+    <!-- ========================================== -->
+    <!-- 2. ESTA ES LA LÍNEA QUE SOLUCIONA EL ERROR -->
+    <!-- Descarga MQTT ANTES de ejecutar tu script  -->
+    <!-- ========================================== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 
-        // Salidas (solo actualizan si el estado cambia realmente)
-        if (lastData.out1 !== d.out1) updateOutput("gen", d.out1);
-        if (lastData.out2 !== d.out2) updateOutput("inst", d.out2);
-        if (lastData.out3 !== d.out3) updateOutput("luz", d.out3);
-        
-        led("ledWifi", d.wifi == "OK");
-        led("ledMQTT", d.mqtt == "OK");
-        led("ledBT", d.bt == "OK");
+</head>
+<body>
 
-        lastData = d;
-    });
+    <!-- ========================================== -->
+    <!-- 3. AQUÍ VA TU DISEÑO HTML (LOS BOTONES)    -->
+    <!-- Pega aquí todos tus <div id="bat_m"> etc.  -->
+    <!-- ========================================== -->
+    
 
-    // --- FUNCIONES OPTIMIZADAS ---
 
-    function updateIfChanged(id, val) {
-        let el = document.getElementById(id);
-        if (el && el.innerHTML !== String(val)) el.innerHTML = val;
-    }
+    <!-- ========================================== -->
+    <!-- 4. TU SCRIPT OPTIMIZADO (NO TOCAR)         -->
+    <!-- ========================================== -->
+    <script>
+        // Aquí mqtt ya está definido porque la librería se cargó arriba
+        const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+        let lastData = {};
+        let lastUpdateTimestamp = 0; 
 
-    function updateBattery(id, val, alarm) {
-        let el = document.getElementById(id);
-        // Como el ESP32 ya envía el valor con un decimal, usamos el valor tal cual
-        let formatted = (val !== undefined && val !== null) ? val + " V" : "-- V";
-        let newClass = alarm ? "value alarm" : "value";
-        
-        if (el && (el.innerHTML !== formatted || el.className !== newClass)) {
-            el.innerHTML = formatted;
-            el.className = newClass;
+        client.on("connect", () => {
+            console.log("Conectado al Broker MQTT"); // Mensaje para ver en consola
+            client.subscribe("boat/data");
+        });
+
+        client.on("message", (topic, msg) => {
+            const now = Date.now();
+            if (now - lastUpdateTimestamp < 100) return; 
+            lastUpdateTimestamp = now;
+
+            let d;
+            try { d = JSON.parse(msg.toString()); } catch(e) { return; }
+
+            updateIfChanged("lat", d.lat);
+            updateIfChanged("lon", d.lon);
+            
+            updateIfChanged("gps", d.gps ? "GPS OK" : "GPS SIN SEÑAL");
+            updateIfChanged("wind", formatVal(d.wind_speed));
+            updateIfChanged("angle", Math.round(d.wind_angle ?? 0));
+            updateIfChanged("depth", formatVal(d.depth));
+            updateIfChanged("temp", formatVal(d.water_temp));
+
+            updateBattery("bat_m", d.bat_m, d.alarm_m);
+            updateBattery("bat_s", d.bat_s, d.alarm_s);
+            updateBattery("bat_b", d.bat_b, d.alarm_b);
+
+            if (lastData.out1 !== d.out1) updateOutput("gen", d.out1);
+            if (lastData.out2 !== d.out2) updateOutput("inst", d.out2);
+            if (lastData.out3 !== d.out3) updateOutput("luz", d.out3);
+            
+            led("ledWifi", d.wifi == "OK");
+            led("ledMQTT", d.mqtt == "OK");
+            led("ledBT", d.bt == "OK");
+
+            lastData = d;
+        });
+
+        function updateIfChanged(id, val) {
+            let el = document.getElementById(id);
+            if (el && el.innerHTML !== String(val)) el.innerHTML = val;
         }
-    }
 
-    function led(id, state) { 
-        let e = document.getElementById(id);
-        if (e) e.style.background = state ? "green" : "red"; 
-    }
+        function updateBattery(id, val, alarm) {
+            let el = document.getElementById(id);
+            let formatted = (val !== undefined && val !== null) ? val + " V" : "-- V";
+            let newClass = alarm ? "value alarm" : "value";
+            
+            if (el && (el.innerHTML !== formatted || el.className !== newClass)) {
+                el.innerHTML = formatted;
+                el.className = newClass;
+            }
+        }
 
-    // Retorna el valor con 1 decimal asegurado
-    function formatVal(v) { 
-        return (v === undefined || v === null) ? "--" : Number(v).toFixed(1); 
-    }
+        function led(id, state) { 
+            let e = document.getElementById(id);
+            if (e) e.style.background = state ? "green" : "red"; 
+        }
 
-    function updateOutput(id, state) {
-        let e = document.getElementById(id);
-        if(!e) return;
-        e.className = state ? "card button on" : "card button off";
-        e.querySelector(".value").innerHTML = state ? "ON" : "OFF";
-    }
-</script>
+        function formatVal(v) { 
+            return (v === undefined || v === null) ? "--" : Number(v).toFixed(1); 
+        }
+
+        function updateOutput(id, state) {
+            let e = document.getElementById(id);
+            if(!e) return;
+            e.className = state ? "card button on" : "card button off";
+            e.querySelector(".value").innerHTML = state ? "ON" : "OFF";
+        }
+    </script>
+</body>
+</html>
