@@ -1,45 +1,43 @@
-client.on("message", (topic, msg) => {
-    let d;
-    try {
-        d = JSON.parse(msg.toString());
-        
-        // --- PROCESAMIENTO SEGREGADO POR SEGURIDAD ---
-        
-        // 1. Actualización visual de bajo impacto
-        updateLedStatus(d);
-        
-        // 2. Actualización de datos GPS y Viento (solo si hay cambios)
-        updateBasicData(d);
-        
-        // 3. BLOQUE SEGURO PARA BATERÍAS
-        // Aquí forzamos la actualización de una sola vez, evitando errores de clase
-        updateBatterySafe("bat_m", d.bat_m, d.alarm_m);
-        updateBatterySafe("bat_s", d.bat_s, d.alarm_s);
-        updateBatterySafe("bat_b", d.bat_b, d.alarm_b);
-        
-        // 4. Salidas
-        updateOutput("gen", d.out1);
-        updateOutput("inst", d.out2);
-        updateOutput("luz", d.out3);
-        
-    } catch(e) { 
-        console.error("Error procesando mensaje:", e);
-        return; 
-    }
-});
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Simple</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; line-height: 2; }
+        .data { font-weight: bold; color: blue; }
+        .btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h3>DATOS</h3>
+    <div>Bat Motor: <span id="bat_m" class="data">--</span></div>
+    <div>Bat Proa: <span id="bat_b" class="data">--</span></div>
+    <div>Temp: <span id="temp" class="data">--</span></div>
+    <div>GPS: <span id="gps" class="data">--</span></div>
 
-// FUNCIÓN DE SEGURIDAD PARA BATERÍAS
-function updateBatterySafe(id, val, alarm) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    <h3>COMANDOS</h3>
+    <button class="btn" onclick="send('out1', true)">GEN ON</button>
+    <button class="btn" onclick="send('out1', false)">GEN OFF</button>
 
-    // Solo actualizamos si el valor es realmente distinto al que ya tiene
-    const newVal = number(val) + " V";
-    const newClass = alarm ? "value alarm" : "value";
-    
-    // Si nada cambió, no hacemos nada (esto evita el bloqueo)
-    if (el.innerHTML === newVal && el.className === newClass) return;
-    
-    el.innerHTML = newVal;
-    el.className = newClass;
-}
+    <script>
+        const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+        client.on("connect", () => client.subscribe("boat/data"));
+
+        client.on("message", (topic, msg) => {
+            const d = JSON.parse(msg.toString());
+            
+            // Actualización directa y ultra rápida
+            document.getElementById("bat_m").innerText = d.bat_m;
+            document.getElementById("bat_b").innerText = d.bat_b;
+            document.getElementById("temp").innerText = d.water_temp;
+            document.getElementById("gps").innerText = d.gps ? "OK" : "NO";
+        });
+
+        function send(cmd, val) {
+            client.publish("boat/cmd", JSON.stringify({ "cmd": cmd, "value": val }));
+        }
+    </script>
+</body>
+</html>
