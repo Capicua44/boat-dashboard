@@ -1,43 +1,78 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Panel Simple</title>
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <style>
-        body { font-family: monospace; padding: 20px; line-height: 2; }
-        .data { font-weight: bold; color: blue; }
-        .btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
-    </style>
-</head>
-<body>
-    <h3>DATOS</h3>
-    <div>Bat Motor: <span id="bat_m" class="data">--</span></div>
-    <div>Bat Proa: <span id="bat_b" class="data">--</span></div>
-    <div>Temp: <span id="temp" class="data">--</span></div>
-    <div>GPS: <span id="gps" class="data">--</span></div>
+<script>
+    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+    let lastData = {};
+    let lastUpdateTimestamp = 0; // Control de tiempo
 
-    <h3>COMANDOS</h3>
-    <button class="btn" onclick="send('out1', true)">GEN ON</button>
-    <button class="btn" onclick="send('out1', false)">GEN OFF</button>
+    client.on("connect", () => {
+        client.subscribe("boat/data");
+    });
 
-    <script>
-        const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-        client.on("connect", () => client.subscribe("boat/data"));
+    client.on("message", (topic, msg) => {
+        // --- FILTRO DE TASA (Throttling) ---
+        // Ignora mensajes si han pasado menos de 100ms desde el último proceso
+        const now = Date.now();
+        if (now - lastUpdateTimestamp < 100) return; 
+        lastUpdateTimestamp = now;
+        // -----------------------------------
 
-        client.on("message", (topic, msg) => {
-            const d = JSON.parse(msg.toString());
-            
-            // Actualización directa y ultra rápida
-            document.getElementById("bat_m").innerText = d.bat_m;
-            document.getElementById("bat_b").innerText = d.bat_b;
-            document.getElementById("temp").innerText = d.water_temp;
-            document.getElementById("gps").innerText = d.gps ? "OK" : "NO";
-        });
+        let d;
+        try { d = JSON.parse(msg.toString()); } catch(e) { return; }
 
-        function send(cmd, val) {
-            client.publish("boat/cmd", JSON.stringify({ "cmd": cmd, "value": val }));
+        // Aquí mantenemos la lógica de comparación exacta que funciona
+        // Actualizamos los campos individualmente solo si cambian
+        updateIfChanged("lat", d.lat);
+        updateIfChanged("lon", d.lon);
+        
+        let gpsStatus = d.gps ? "GPS OK" : "GPS SIN SEÑAL";
+        updateIfChanged("gps", gpsStatus);
+
+        updateIfChanged("wind", number(d.wind_speed));
+        updateIfChanged("angle", Math.round(d.wind_angle ?? 0));
+        updateIfChanged("depth", number(d.depth));
+        updateIfChanged("temp", number(d.water_temp));
+
+        updateBattery("bat_m", d.bat_m, d.alarm_m);
+        updateBattery("bat_s", d.bat_s, d.alarm_s);
+        updateBattery("bat_b", d.bat_b, d.alarm_b);
+
+        if (lastData.out1 !== d.out1) updateOutput("gen", d.out1);
+        if (lastData.out2 !== d.out2) updateOutput("inst", d.out2);
+        if (lastData.out3 !== d.out3) updateOutput("luz", d.out3);
+        
+        led("ledWifi", d.wifi == "OK");
+        led("ledMQTT", d.mqtt == "OK");
+        led("ledBT", d.bt == "OK");
+
+        lastData = d;
+    });
+
+    // FUNCIONES DE APOYO (Sin cambios para no alterar tu diseño)
+    function updateIfChanged(id, val) {
+        let el = document.getElementById(id);
+        if (el && el.innerHTML !== String(val)) el.innerHTML = val;
+    }
+
+    function updateBattery(id, val, alarm) {
+        let el = document.getElementById(id);
+        let formatted = number(val) + " V";
+        let newClass = alarm ? "value alarm" : "value";
+        if (el && (el.innerHTML !== formatted || el.className !== newClass)) {
+            el.innerHTML = formatted;
+            el.className = newClass;
         }
-    </script>
-</body>
-</html>
+    }
+
+    function led(id, state) { 
+        let e = document.getElementById(id);
+        if (e) e.style.background = state ? "green" : "red"; 
+    }
+
+    function number(v) { return (v === undefined || v === null) ? "--" : Number(v).toFixed(1); }
+
+    function updateOutput(id, state) {
+        let e = document.getElementById(id);
+        if(!e) return;
+        e.className = state ? "card button on" : "card button off";
+        e.querySelector(".value").innerHTML = state ? "ON" : "OFF";
+    }
+</script>
