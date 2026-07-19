@@ -1,78 +1,45 @@
-<script>
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-    let lastData = {};
-    let lastUpdateTimestamp = 0; // Control de tiempo
-
-    client.on("connect", () => {
-        client.subscribe("boat/data");
-    });
-
-    client.on("message", (topic, msg) => {
-        // --- FILTRO DE TASA (Throttling) ---
-        // Ignora mensajes si han pasado menos de 100ms desde el último proceso
-        const now = Date.now();
-        if (now - lastUpdateTimestamp < 100) return; 
-        lastUpdateTimestamp = now;
-        // -----------------------------------
-
-        let d;
-        try { d = JSON.parse(msg.toString()); } catch(e) { return; }
-
-        // Aquí mantenemos la lógica de comparación exacta que funciona
-        // Actualizamos los campos individualmente solo si cambian
-        updateIfChanged("lat", d.lat);
-        updateIfChanged("lon", d.lon);
+client.on("message", (topic, msg) => {
+    let d;
+    try {
+        d = JSON.parse(msg.toString());
         
-        let gpsStatus = d.gps ? "GPS OK" : "GPS SIN SEÑAL";
-        updateIfChanged("gps", gpsStatus);
-
-        updateIfChanged("wind", number(d.wind_speed));
-        updateIfChanged("angle", Math.round(d.wind_angle ?? 0));
-        updateIfChanged("depth", number(d.depth));
-        updateIfChanged("temp", number(d.water_temp));
-
-        updateBattery("bat_m", d.bat_m, d.alarm_m);
-        updateBattery("bat_s", d.bat_s, d.alarm_s);
-        updateBattery("bat_b", d.bat_b, d.alarm_b);
-
-        if (lastData.out1 !== d.out1) updateOutput("gen", d.out1);
-        if (lastData.out2 !== d.out2) updateOutput("inst", d.out2);
-        if (lastData.out3 !== d.out3) updateOutput("luz", d.out3);
+        // --- PROCESAMIENTO SEGREGADO POR SEGURIDAD ---
         
-        led("ledWifi", d.wifi == "OK");
-        led("ledMQTT", d.mqtt == "OK");
-        led("ledBT", d.bt == "OK");
-
-        lastData = d;
-    });
-
-    // FUNCIONES DE APOYO (Sin cambios para no alterar tu diseño)
-    function updateIfChanged(id, val) {
-        let el = document.getElementById(id);
-        if (el && el.innerHTML !== String(val)) el.innerHTML = val;
+        // 1. Actualización visual de bajo impacto
+        updateLedStatus(d);
+        
+        // 2. Actualización de datos GPS y Viento (solo si hay cambios)
+        updateBasicData(d);
+        
+        // 3. BLOQUE SEGURO PARA BATERÍAS
+        // Aquí forzamos la actualización de una sola vez, evitando errores de clase
+        updateBatterySafe("bat_m", d.bat_m, d.alarm_m);
+        updateBatterySafe("bat_s", d.bat_s, d.alarm_s);
+        updateBatterySafe("bat_b", d.bat_b, d.alarm_b);
+        
+        // 4. Salidas
+        updateOutput("gen", d.out1);
+        updateOutput("inst", d.out2);
+        updateOutput("luz", d.out3);
+        
+    } catch(e) { 
+        console.error("Error procesando mensaje:", e);
+        return; 
     }
+});
 
-    function updateBattery(id, val, alarm) {
-        let el = document.getElementById(id);
-        let formatted = number(val) + " V";
-        let newClass = alarm ? "value alarm" : "value";
-        if (el && (el.innerHTML !== formatted || el.className !== newClass)) {
-            el.innerHTML = formatted;
-            el.className = newClass;
-        }
-    }
+// FUNCIÓN DE SEGURIDAD PARA BATERÍAS
+function updateBatterySafe(id, val, alarm) {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-    function led(id, state) { 
-        let e = document.getElementById(id);
-        if (e) e.style.background = state ? "green" : "red"; 
-    }
-
-    function number(v) { return (v === undefined || v === null) ? "--" : Number(v).toFixed(1); }
-
-    function updateOutput(id, state) {
-        let e = document.getElementById(id);
-        if(!e) return;
-        e.className = state ? "card button on" : "card button off";
-        e.querySelector(".value").innerHTML = state ? "ON" : "OFF";
-    }
-</script>
+    // Solo actualizamos si el valor es realmente distinto al que ya tiene
+    const newVal = number(val) + " V";
+    const newClass = alarm ? "value alarm" : "value";
+    
+    // Si nada cambió, no hacemos nada (esto evita el bloqueo)
+    if (el.innerHTML === newVal && el.className === newClass) return;
+    
+    el.innerHTML = newVal;
+    el.className = newClass;
+}
